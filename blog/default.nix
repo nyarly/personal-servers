@@ -19,7 +19,7 @@ in
       owner = "nyarly";
       repo = "blog";
       rev = "master";
-      sha256 = "1rcim9scfxi1z2dsgznqgbqbnff628cxl96shnlpbbsi099prsdy";
+      sha256 = import ./source.nix;
     };
 
     buildInputs = [
