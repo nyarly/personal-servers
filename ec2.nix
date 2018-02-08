@@ -2,6 +2,7 @@ let
   accessKeyId = "jdl";
   region = "us-west-2";
 
+
   ec2 = { resources, ... }:
   {
     deployment = {
