@@ -13,14 +13,17 @@ let
   };
 in
   stdenv.mkDerivation {
-    name = "jdl-blog";
+    name = "blog-jdl";
 
-    src = fetchFromGitHub {
-      owner = "nyarly";
-      repo = "blog";
-      rev = "master";
-      sha256 = import ./source.nix;
-    };
+    src = if builtins.pathExists(./source.nix) then
+      fetchFromGitHub {
+        owner = "nyarly";
+        repo = "blog";
+        rev = "master";
+        sha256 = import ./source.nix;
+        }
+    else
+      ./.;
 
     buildInputs = [
       rubyEnv

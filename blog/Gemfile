@@ -1,7 +1,6 @@
 source "https://rubygems.org"
 
 gem "jekyll", '~> 3.1'
-gem "jekyll-import"
 gem "rake"
 gem "unidecode"
 gem "sequel"
