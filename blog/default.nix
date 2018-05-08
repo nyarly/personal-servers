@@ -27,7 +27,6 @@ in
 
     buildInputs = [
       rubyEnv
-      bundler
     ];
 
     buildPhase = "jekyll build";

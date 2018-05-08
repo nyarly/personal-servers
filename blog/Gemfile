@@ -8,5 +8,4 @@ gem "mysql2"
 gem "htmlentities"
 group :jekyll_plugins do
   gem 'jekyll-compose'
-  gem 'jekyll-livereload'
 end

@@ -100,15 +100,6 @@
     };
     version = "0.7.0";
   };
-  jekyll-livereload = {
-    dependencies = ["em-websocket" "jekyll"];
-    source = {
-      remotes = ["https://rubygems.org"];
-      sha256 = "1l5kbd9figf65i0ggrvvh9f4d6q427di0vlq53155lmp6jhr5vyb";
-      type = "gem";
-    };
-    version = "0.2.2";
-  };
   jekyll-sass-converter = {
     dependencies = ["sass"];
     source = {
