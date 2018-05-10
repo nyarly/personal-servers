@@ -1,6 +1,48 @@
 let
   blog = import ./blog/default.nix {};
   acmeRoot = "/var/run/acme-challenges";
+
+
+  httpDomainConfig = {name, docRoot, tlsReady ? false}: {
+          enable = true;
+          adminAddr = "nyarly@gmail.com";
+          virtualHosts = [
+            {
+              hostName = name;
+              serverAliases = [ "www.${name}" ];
+              listen = [{ port = 80; }];
+
+              documentRoot = docRoot;
+              extraConfig = ''
+                ${if tlsReady then "Redirect / https://${name}" else ""}
+                Alias "/.well-known/acme-challenge" "${acmeRoot}/${name}/.well-known/acme-challenge"
+                <Directory ${acmeRoot}/${name}>
+                  Require all granted
+                </Directory>
+              '';
+
+            }
+
+            {
+              hostName = name;
+              serverAliases = [ "www.${name}" ];
+              listen = [{ port = 443; }];
+
+              documentRoot = docRoot;
+              enableSSL = true;
+              sslServerCert = "/var/lib/acme/${name}/full.pem";
+              sslServerKey = "/var/lib/acme/${name}/key.pem";
+
+              extraConfig = ''
+                Alias "/.well-known/acme-challenge" "${acmeRoot}/${name}/.well-known/acme-challenge"
+                <Directory ${acmeRoot}/${name}>
+                  Require all granted
+                </Directory>
+              '';
+            }
+          ];
+        };
+
 in
   {
     network.description = "Web server";
@@ -15,47 +57,17 @@ in
 
         services.fail2ban.enable = true;
 
-        services.httpd = {
-          enable = true;
-          adminAddr = "nyarly@gmail.com";
-          virtualHosts = [
-            {
-              hostName = "judsonlester.info";
-              serverAliases = [ "www.judsonlester.info" ];
-              listen = [{ port = 80; }];
-              extraConfig = ''
-                Redirect / https://judsonlester.info
-                Alias "/.well-known/acme-challenge" "${acmeRoot}/judsonlester.info/.well-known/acme-challenge"
-                <Directory ${acmeRoot}/judsonlester.info>
-                  Require all granted
-                </Directory>
-              '';
-
-            }
-            {
-              hostName = "judsonlester.info";
-              serverAliases = [ "www.judsonlester.info" ];
-              listen = [{ port = 443; }];
-
-              documentRoot = blog;
-              enableSSL = true;
-              sslServerCert = "/var/lib/acme/judsonlester.info/full.pem";
-              sslServerKey = "/var/lib/acme/judsonlester.info/key.pem";
-
-              extraConfig = ''
-                Alias "/.well-known/acme-challenge" "${acmeRoot}/judsonlester.info/.well-known/acme-challenge"
-                <Directory ${acmeRoot}/judsonlester.info>
-                  Require all granted
-                </Directory>
-              '';
-            }
-          ];
+        services.httpd = httpDomainConfig {
+          name = "judsonlester.info";
+          docRoot = blog;
+          tlsReady = true;
         };
 
         security.acme.certs = {
           "judsonlester.info" = {
             webroot = acmeRoot + "/judsonlester.info";
             email = "nyarly@gmail.com";
+            postRun = "systemctl reload httpd.service";
           };
         };
 

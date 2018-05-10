@@ -19,7 +19,7 @@ in
       fetchFromGitHub {
         owner = "nyarly";
         repo = "blog";
-        rev = "master";
+        rev = import ./commit.nix;
         sha256 = import ./source.nix;
         }
     else
