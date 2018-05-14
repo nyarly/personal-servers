@@ -80,7 +80,11 @@ with lib;
             email = "nyarly@gmail.com";
             postRun = "systemctl reload httpd.service";
           };
-      in [ { name = domain; value = cfg; } { name = "www.${domain}"; value = cfg; } ];
+        in [ {
+          name = domain;
+          value = cfg;
+          extraDomains = { "www.${domain}" = null; };
+        } ];
     in certs;
 
     systemd.services.httpd = {
