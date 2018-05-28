@@ -47,11 +47,20 @@ in
 
         serveDNS = {...}: {
           inherit region accessKeyId;
-          rules = [{
-            sourceIp = "0.0.0.0/0";
-            fromPort = 0;
-            toPort = 53;
-          }];
+          rules = [
+            {
+              sourceIp = "0.0.0.0/0";
+              fromPort = 0;
+              protocol = "udp";
+              toPort = 53;
+            }
+            {
+              sourceIp = "0.0.0.0/0";
+              fromPort = 0;
+              protocol = "tcp";
+              toPort = 53;
+            }
+          ];
         };
 
         serveHTTP = {...}: {
