@@ -71,6 +71,8 @@ with lib;
       ];
     in vhosts;
 
+    services.nsd.zones.staticweb.children = mapAttrs (name: value: {}) config.staticWeb.sites;
+
     security.acme.certs = let
       certs = listToAttrs (concatLists (mapAttrsToList siteToCertCfg config.staticWeb.sites));
       siteToCertCfg = domain: {...}:

@@ -14,6 +14,7 @@ let
         elasticIPv4 = resources.elasticIPs.web;
         securityGroups = with resources.ec2SecurityGroups; [
           serveSSH.name
+          serveDNS.name
           serveHTTP.name
           serveHTTPS.name
         ];
@@ -41,6 +42,15 @@ in
             sourceIp = "0.0.0.0/0";
             fromPort = 0;
             toPort = 22;
+          }];
+        };
+
+        serveDNS = {...}: {
+          inherit region accessKeyId;
+          rules = [{
+            sourceIp = "0.0.0.0/0";
+            fromPort = 0;
+            toPort = 53;
           }];
         };
 
