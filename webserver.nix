@@ -3,13 +3,13 @@ let
   acmeRoot = "/var/run/acme-challenges";
 
   buddyNSServers = [
-    "173.244.206.25 NOKEY"
     "173.244.206.26 NOKEY"
     "88.198.106.11 NOKEY"
     "108.61.224.67 NOKEY"
     "103.6.87.125 NOKEY"
     "185.136.176.247 NOKEY"
-    "2607:f0d0:1005:72::100 NOKEY"
+
+    "2607:f0d0:1001:d::100 NOKEY"
     "2a01:4f8:d12:d01::10:100 NOKEY"
     "2001:19f0:6400:8642::3 NOKEY"
     "2403:2500:4000::f3e NOKEY"
