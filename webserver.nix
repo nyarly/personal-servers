@@ -21,7 +21,6 @@ in
 
     webserver = {  config, pkgs, ... }:
     let
-      #cfg = builtins.trace (builtins.attrNames config) config;
       pubIP = config.networking.publicIPv4;
     in
     {
@@ -45,7 +44,7 @@ in
             "staticweb" = {
               provideXFR = buddyNSServers;
               notify = buddyNSServers;
-                # rrlWhitelist = ["all"];
+              # rrlWhitelist = ["all"];
 
               data = ''
                 $TTL 18000  ; 5 hours
