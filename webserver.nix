@@ -29,7 +29,18 @@ in
       environment.systemPackages = with pkgs; [ neovim fish ];
 
       services = {
-        fail2ban.enable = true;
+        fail2ban = {
+          enable = true;
+          jails = {
+            ssh-iptables =
+            ''
+            filter   = sshd[mode=aggressive]
+            action   = iptables[name=SSH, port=ssh, protocol=tcp]
+            logpath  = /var/log/warn
+            maxretry = 5
+            '';
+          };
+        };
 
         httpd = {
           enable = true;
