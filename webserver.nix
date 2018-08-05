@@ -32,7 +32,7 @@ in
         fail2ban = {
           enable = true;
           jails = {
-            ssh-iptables =
+            ssh-aggressive =
             ''
             filter   = sshd[mode=aggressive]
             action   = iptables[name=SSH, port=ssh, protocol=tcp]

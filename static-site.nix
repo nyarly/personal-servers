@@ -43,7 +43,7 @@ with lib;
 
           documentRoot = docRoot;
           extraConfig = ''
-                Redirect / https://${name}
+                Redirect / https://${name}/
                 Alias "/.well-known/acme-challenge" "${config.staticWeb.acmeRoot}/${name}/.well-known/acme-challenge"
                 <Directory ${config.staticWeb.acmeRoot}/${name}>
                   Require all granted
