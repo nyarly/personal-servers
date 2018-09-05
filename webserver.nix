@@ -51,6 +51,11 @@ in
           };
         };
 
+        postgresql = {
+          enable = true;
+          package = pkgs.postgresql100;
+        };
+
         httpd = {
           enable = true;
           adminAddr = "nyarly@gmail.com";
