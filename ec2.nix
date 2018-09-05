@@ -11,13 +11,19 @@ let
         inherit region accessKeyId;
         instanceType = "t2.micro";
         keyPair = resources.ec2KeyPairs.jdl;
-        elasticIPv4 = resources.elasticIPs.web;
+        elasticIPv4 = "52.40.201.163";
         securityGroups = with resources.ec2SecurityGroups; [
           serveSSH.name
           serveDNS.name
           serveHTTP.name
           serveHTTPS.name
         ];
+        blockDeviceMapping = {
+          "/dev/xvdf" = {
+            deleteOnTermination = false;
+            size = 20;
+          };
+        };
       };
     };
   };
@@ -29,11 +35,14 @@ in
         inherit region accessKeyId;
       };
 
+      /*
+      Published in DNS. No longer NixOps' to delete.
       elasticIPs = {
         web = {
           inherit region accessKeyId;
         };
       };
+      */
 
       ec2SecurityGroups = {
         serveSSH = {...}: {
