@@ -28,6 +28,15 @@ in
 
       environment.systemPackages = with pkgs; [ neovim fish ];
 
+      fileSystems = {
+        "/var/lib" = {
+          device = "/dev/xvdf";
+          fsType = "ext4";
+          # autoFormat = true;
+          autoResize = true;
+        };
+      };
+
       services = {
         fail2ban = {
           enable = true;
