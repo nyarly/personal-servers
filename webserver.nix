@@ -1,5 +1,5 @@
 let
-  blog = import ./blog/default.nix {};
+  blog = import ./packages/blog/default.nix {};
   acmeRoot = "/var/run/acme-challenges";
 
   buddyNSServers = [
@@ -24,7 +24,7 @@ in
       pubIP = config.networking.publicIPv4;
     in
     {
-      imports = [ ./static-site.nix ];
+      imports = [ ./module/static-site.nix ];
 
       environment.systemPackages = with pkgs; [ neovim fish ];
 
