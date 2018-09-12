@@ -3,34 +3,32 @@
 with lib;
 
 let
-  cfg = config.services.frab;
+  cfg = config.services.wagthepig;
 
-  package = pkgs.frab;
+  package = cfg.package;
 
   databaseConfig = builtins.toJSON { production = cfg.database; };
 
-  frabEnv = {
+  wagthepigEnv = {
     RAILS_ENV = "production";
     RACK_ENV = "production";
     SECRET_KEY_BASE = cfg.secretKeyBase;
-    FRAB_HOST = cfg.host;
-    FRAB_PROTOCOL = cfg.protocol;
     FROM_EMAIL = cfg.fromEmail;
     RAILS_SERVE_STATIC_FILES = "1";
   } // cfg.extraEnvironment;
 
-  frab-rake = pkgs.stdenv.mkDerivation rec {
-    name = "frab-rake";
+  wagthepig-rake = pkgs.stdenv.mkDerivation rec {
+    name = "wagthepig-rake";
     buildInputs = [ package.env pkgs.makeWrapper ];
     phases = "installPhase fixupPhase";
     installPhase = ''
       mkdir -p $out/bin
-      makeWrapper ${package.env}/bin/bundle $out/bin/frab-bundle \
-          ${concatStrings (mapAttrsToList (name: value: "--set ${name} '${value}' ") frabEnv)} \
+      makeWrapper ${package.env}/bin/bundle $out/bin/wagthepig-bundle \
+          ${concatStrings (mapAttrsToList (name: value: "--set ${name} '${value}' ") wagthepigEnv)} \
           --set PATH '${lib.makeBinPath (with pkgs; [ nodejs file imagemagick ])}:$PATH' \
-          --set RAKEOPT '-f ${package}/share/frab/Rakefile' \
-          --run 'cd ${package}/share/frab'
-      makeWrapper $out/bin/frab-bundle $out/bin/frab-rake \
+          --set RAKEOPT '-f ${package}/share/wagthepig/Rakefile' \
+          --run 'cd ${package}/share/wagthepig'
+      makeWrapper $out/bin/wagthepig-bundle $out/bin/wagthepig-rake \
           --add-flags "exec rake"
      '';
   };
@@ -39,20 +37,23 @@ in
 
 {
   options = {
-    services.frab = {
+    services.wagthepig = {
       enable = mkOption {
         type = types.bool;
         default = false;
         description = ''
-          Enable the frab service.
+          Enable the wagthepig service.
         '';
+      };
+
+      package = mkOption {
       };
 
       host = mkOption {
         type = types.str;
-        example = "frab.example.com";
+        example = "wagthepig.example.com";
         description = ''
-          Hostname under which this frab instance can be reached.
+          Hostname under which this wagthepig instance can be reached.
         '';
       };
 
@@ -68,9 +69,9 @@ in
 
       fromEmail = mkOption {
         type = types.str;
-        default = "frab@localhost";
+        default = "wagthepig@localhost";
         description = ''
-          Email address used by frab.
+          Email address used by wagthepig.
         '';
       };
 
@@ -78,7 +79,7 @@ in
         type = types.str;
         default = "localhost";
         description = ''
-          Address or hostname frab should listen on.
+          Address or hostname wagthepig should listen on.
         '';
       };
 
@@ -86,31 +87,31 @@ in
         type = types.int;
         default = 3000;
         description = ''
-          Port frab should listen on.
+          Port wagthepig should listen on.
         '';
       };
 
       statePath = mkOption {
         type = types.str;
-        default = "/var/lib/frab";
+        default = "/var/lib/wagthepig";
         description = ''
-          Directory where frab keeps its state.
+          Directory where wagthepig keeps its state.
         '';
       };
 
       user = mkOption {
         type = types.str;
-        default = "frab";
+        default = "wagthepig";
         description = ''
-          User to run frab.
+          User to run wagthepig.
         '';
       };
 
       group = mkOption {
         type = types.str;
-        default = "frab";
+        default = "wagthepig";
         description = ''
-          Group to run frab.
+          Group to run wagthepig.
         '';
       };
 
@@ -129,15 +130,15 @@ in
         type = types.attrs;
         default = {
           adapter = "sqlite3";
-          database = "/var/lib/frab/db.sqlite3";
+          database = "/var/lib/wagthepig/db.sqlite3";
           pool = 5;
           timeout = 5000;
         };
         example = {
           adapter = "postgresql";
-          database = "frab";
+          database = "wagthepig";
           host = "localhost";
-          username = "frabuser";
+          username = "wagthepiguser";
           password = "supersecret";
           encoding = "utf8";
           pool = 5;
@@ -153,7 +154,7 @@ in
         example = {
           FRAB_CURRENCY_UNIT = "€";
           FRAB_CURRENCY_FORMAT = "%n%u";
-          EXCEPTION_EMAIL = "frab-owner@example.com";
+          EXCEPTION_EMAIL = "wagthepig-owner@example.com";
           SMTP_ADDRESS = "localhost";
           SMTP_PORT = "587";
           SMTP_DOMAIN = "localdomain";
@@ -163,15 +164,15 @@ in
           SMTP_NOTLS = "1";
         };
         description = ''
-          Additional environment variables to set for frab for further
-          configuration. See the frab documentation for more information.
+          Additional environment variables to set for wagthepig for further
+          configuration. See the wagthepig documentation for more information.
         '';
       };
     };
   };
 
   config = mkIf cfg.enable {
-    environment.systemPackages = [ frab-rake ];
+    environment.systemPackages = [ wagthepig-rake ];
 
     users.users = [
       { name = cfg.user;
@@ -182,24 +183,24 @@ in
 
     users.groups = [ { name = cfg.group; } ];
 
-    systemd.services.frab = {
+    systemd.services.wagthepig = {
       after = [ "network.target" "gitlab.service" ];
       wantedBy = [ "multi-user.target" ];
-      environment = frabEnv;
+      environment = wagthepigEnv;
 
       preStart = ''
         mkdir -p ${cfg.statePath}/system/attachments
         chown ${cfg.user}:${cfg.group} -R ${cfg.statePath}
 
-        mkdir /run/frab -p
-        ln -sf ${pkgs.writeText "frab-database.yml" databaseConfig} /run/frab/database.yml
-        ln -sf ${cfg.statePath}/system /run/frab/system
+        mkdir /run/wagthepig -p
+        ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} /run/wagthepig/database.yml
+        ln -sf ${cfg.statePath}/system /run/wagthepig/system
 
         if ! test -e "${cfg.statePath}/db-setup-done"; then
-          ${frab-rake}/bin/frab-rake db:setup
+          ${wagthepig-rake}/bin/wagthepig-rake db:setup
           touch ${cfg.statePath}/db-setup-done
         else
-          ${frab-rake}/bin/frab-rake db:migrate
+          ${wagthepig-rake}/bin/wagthepig-rake db:migrate
         fi
       '';
 
@@ -213,8 +214,8 @@ in
         TimeoutSec = "300s";
         Restart = "on-failure";
         RestartSec = "10s";
-        WorkingDirectory = "${package}/share/frab";
-        ExecStart = "${frab-rake}/bin/frab-bundle exec rails server " +
+        WorkingDirectory = "${package}/share/wagthepig";
+        ExecStart = "${wagthepig-rake}/bin/wagthepig-bundle exec rails server " +
           "--binding=${cfg.listenAddress} --port=${toString cfg.listenPort}";
       };
     };
