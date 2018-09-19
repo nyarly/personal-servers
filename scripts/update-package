@@ -1,0 +1,1 @@
+nix-prefetch-git --no-deepClone --quiet git@github.com:nyarly/blog.git | jq '"sha256 = " + .sha256'

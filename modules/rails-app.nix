@@ -9,7 +9,7 @@ let
 
   databaseConfig = builtins.toJSON { production = cfg.database; };
 
-  wagthepigEnv = {
+  appEnv = {
     RAILS_ENV = "production";
     RACK_ENV = "production";
     SECRET_KEY_BASE = cfg.secretKeyBase;
@@ -17,18 +17,18 @@ let
     RAILS_SERVE_STATIC_FILES = "1";
   } // cfg.extraEnvironment;
 
-  wagthepig-rake = pkgs.stdenv.mkDerivation rec {
-    name = "wagthepig-rake";
+  app-rake = pkgs.stdenv.mkDerivation rec {
+    name = "${package.name}-rake";
     buildInputs = [ package.env pkgs.makeWrapper ];
     phases = "installPhase fixupPhase";
     installPhase = ''
       mkdir -p $out/bin
-      makeWrapper ${package.env}/bin/bundle $out/bin/wagthepig-bundle \
-          ${concatStrings (mapAttrsToList (name: value: "--set ${name} '${value}' ") wagthepigEnv)} \
+      makeWrapper ${package.env}/bin/bundle $out/bin/wrapped-bundle \
+          ${concatStrings (mapAttrsToList (name: value: "--set ${name} '${value}' ") appEnv)} \
           --set PATH '${lib.makeBinPath (with pkgs; [ nodejs file imagemagick ])}:$PATH' \
-          --set RAKEOPT '-f ${package}/share/wagthepig/Rakefile' \
-          --run 'cd ${package}/share/wagthepig'
-      makeWrapper $out/bin/wagthepig-bundle $out/bin/wagthepig-rake \
+          --set RAKEOPT '-f ${package}/Rakefile' \
+          --run 'cd ${package}'
+      makeWrapper $out/bin/wrapped-bundle $out/bin/wrapped-rake \
           --add-flags "exec rake"
      '';
   };
@@ -47,6 +47,10 @@ in
       };
 
       package = mkOption {
+        type = types.package;
+        description = ''
+          The package to use for wagthepig.
+        '';
       };
 
       host = mkOption {
@@ -62,7 +66,7 @@ in
         default = "https";
         example = "http";
         description = ''
-          Either http or https, depending on how your Frab instance
+          Either http or https, depending on how your WagthePig instance
           will be exposed to the public.
         '';
       };
@@ -144,7 +148,7 @@ in
           pool = 5;
         };
         description = ''
-          Rails database configuration for Frab as Nix attribute set.
+          Rails database configuration for WagthePig as Nix attribute set.
         '';
       };
 
@@ -172,35 +176,35 @@ in
   };
 
   config = mkIf cfg.enable {
-    environment.systemPackages = [ wagthepig-rake ];
+    users = {
+      users = [
+        { name = cfg.user;
+          group = cfg.group;
+          home = "${cfg.statePath}";
+        }
+      ];
 
-    users.users = [
-      { name = cfg.user;
-        group = cfg.group;
-        home = "${cfg.statePath}";
-      }
-    ];
-
-    users.groups = [ { name = cfg.group; } ];
+      groups = [ { name = cfg.group; } ];
+    };
 
     systemd.services.wagthepig = {
-      after = [ "network.target" "gitlab.service" ];
+      after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
-      environment = wagthepigEnv;
+      environment = appEnv;
 
       preStart = ''
         mkdir -p ${cfg.statePath}/system/attachments
         chown ${cfg.user}:${cfg.group} -R ${cfg.statePath}
 
-        mkdir /run/wagthepig -p
-        ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} /run/wagthepig/database.yml
-        ln -sf ${cfg.statePath}/system /run/wagthepig/system
+        mkdir ${package.runDir} -p
+        ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} ${package.runDir}/database.yml
+        ln -sf ${cfg.statePath}/system ${package.runDir}/system
 
         if ! test -e "${cfg.statePath}/db-setup-done"; then
-          ${wagthepig-rake}/bin/wagthepig-rake db:setup
+          ${app-rake}/bin/wrapped-rake db:setup
           touch ${cfg.statePath}/db-setup-done
         else
-          ${wagthepig-rake}/bin/wagthepig-rake db:migrate
+          ${app-rake}/bin/wrapped-rake db:migrate
         fi
       '';
 
@@ -214,8 +218,8 @@ in
         TimeoutSec = "300s";
         Restart = "on-failure";
         RestartSec = "10s";
-        WorkingDirectory = "${package}/share/wagthepig";
-        ExecStart = "${wagthepig-rake}/bin/wagthepig-bundle exec rails server " +
+        WorkingDirectory = "${package}";
+        ExecStart = "${app-rake}/bin/wrapped-bundle exec rails server " +
           "--binding=${cfg.listenAddress} --port=${toString cfg.listenPort}";
       };
     };
