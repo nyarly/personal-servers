@@ -1,5 +1,6 @@
 let
   blog = import ./packages/blog/default.nix {};
+  wagthepig = import ./package/wagthepig/default.nix {};
   acmeRoot = "/var/run/acme-challenges";
 
   buddyNSServers = [
@@ -38,6 +39,16 @@ in
       };
 
       services = {
+        wagthepig = {
+          enable = true;
+          package = wagthepig;
+
+          # Should come from a "appserver bridge" module
+          protocol = "http";
+          listenAddress = localhost;
+          listenPort = 3000;
+        };
+
         fail2ban = {
           enable = true;
           jails = {
