@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+PATH=$(dirname $0):$PATH
+
+if [ ! -d packages/blog ]; then
+  "No directory 'packages/blog', used as a canary for correct run."
+  exit 1
+fi
+
+set -x
+
+update-package git@github.com:nyarly/blog.git > packages/blog/source.json
+update-package git@github.com:nyarly/wagthepig.git > packages/wagthepig/source.json

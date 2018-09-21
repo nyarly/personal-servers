@@ -1,1 +1,26 @@
-nix-prefetch-git --no-deepClone --quiet git@github.com:nyarly/blog.git | jq '"sha256 = " + .sha256'
+#! /usr/bin/env bash
+usage="${0} <repo>"
+
+repo=${1:-$usage}
+
+dir=$(commute lookup $repo)
+if [ $? -ne 0 ]; then
+  echo "No workspace known for $repo!" 1&>2
+  exit 1
+fi
+
+(
+cd $dir
+local_master_id=$(git rev-parse master)
+remote_master_id=$(git ls-remote origin -h refs/heads/master | awk '{ print $1 }')
+if [ $local_master_id != $remote_master_id ]; then
+  echo "Workspace master branch not on the same branch as origin remote"
+  exit 2
+fi
+)
+
+if [ $? -ne 0 ]; then
+  exit $? 1&>2
+fi
+
+nix-prefetch-git --no-deepClone --quiet $repo

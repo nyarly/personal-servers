@@ -15,13 +15,8 @@ in
   stdenv.mkDerivation {
     name = "blog-jdl";
 
-    src = if builtins.pathExists(./source.nix) then
-      fetchFromGitHub {
-        owner = "nyarly";
-        repo = "blog";
-        rev = import ./commit.nix;
-        sha256 = import ./source.nix;
-        }
+    src = if builtins.pathExists(./source.json) then
+      fetchFromGitHub (fromJSON ./source.json) // { owner = "nyarly"; repo = "blog"; }
     else
       ./.;
 
