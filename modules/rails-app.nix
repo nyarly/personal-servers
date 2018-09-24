@@ -175,54 +175,75 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
-    users = {
-      users = [
-        { name = cfg.user;
-          group = cfg.group;
-          home = "${cfg.statePath}";
-        }
-      ];
+  config = mkIf cfg.enable
+  (let
+    createDBuser = options:
+      let
+        db = options.services.wagthepig.database;
+      in
+        if db.adapter == "postgresql" then
+          let
+            pg = options.service.postgres;
+          in
+            ''
+              while ! ${pg.package}/bin/pg_isready -h ${db.host} do
+                sleep 0.1
+              done
+              createuser -U ${pg.superUser} --echo --createdb --no-createrole --no-superuser ${db.username} || echo "already exists (probably)"
+            ''
+        else "echo Don't know how to set up user for database adapter: ${db.adapter}";
 
-      groups = [ { name = cfg.group; } ];
-    };
+  in
+    {
+      users = {
+        users = [
+          { name = cfg.user;
+            group = cfg.group;
+            home = "${cfg.statePath}";
+          }
+        ];
 
-    systemd.services.wagthepig = {
-      after = [ "network.target" ];
-      wantedBy = [ "multi-user.target" ];
-      environment = appEnv;
-
-      preStart = ''
-        mkdir -p ${cfg.statePath}/system/attachments
-        chown ${cfg.user}:${cfg.group} -R ${cfg.statePath}
-
-        mkdir ${package.runDir} -p
-        ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} ${package.runDir}/database.yml
-        ln -sf ${cfg.statePath}/system ${package.runDir}/system
-
-        if ! test -e "${cfg.statePath}/db-setup-done"; then
-          ${app-rake}/bin/wrapped-rake db:setup
-          touch ${cfg.statePath}/db-setup-done
-        else
-          ${app-rake}/bin/wrapped-rake db:migrate
-        fi
-      '';
-
-      serviceConfig = {
-        PermissionsStartOnly = true;
-        PrivateTmp = true;
-        PrivateDevices = true;
-        Type = "simple";
-        User = cfg.user;
-        Group = cfg.group;
-        TimeoutSec = "300s";
-        Restart = "on-failure";
-        RestartSec = "10s";
-        WorkingDirectory = "${package}";
-        ExecStart = "${app-rake}/bin/wrapped-bundle exec rails server " +
-          "--binding=${cfg.listenAddress} --port=${toString cfg.listenPort}";
+        groups = [ { name = cfg.group; } ];
       };
-    };
 
-  };
+
+      systemd.services.wagthepig = {
+        after = [ "network.target" ];
+        wantedBy = [ "multi-user.target" ];
+        environment = appEnv;
+
+        preStart = ''
+          mkdir -p ${cfg.statePath}/system/attachments
+          chown ${cfg.user}:${cfg.group} -R ${cfg.statePath}
+
+          mkdir ${package.runDir} -p
+          ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} ${package.runDir}/database.yml
+          ln -sf ${cfg.statePath}/system ${package.runDir}/system
+
+          ${createDBuser options}
+
+          if ! test -e "${cfg.statePath}/db-setup-done"; then
+            ${app-rake}/bin/wrapped-rake db:setup
+            touch ${cfg.statePath}/db-setup-done
+          else
+            ${app-rake}/bin/wrapped-rake db:migrate
+          fi
+        '';
+
+        serviceConfig = {
+          PermissionsStartOnly = true;
+          PrivateTmp = true;
+          PrivateDevices = true;
+          Type = "simple";
+          User = cfg.user;
+          Group = cfg.group;
+          TimeoutSec = "300s";
+          Restart = "on-failure";
+          RestartSec = "10s";
+          WorkingDirectory = "${package}";
+          ExecStart = "${app-rake}/bin/wrapped-bundle exec rails server " +
+            "--binding=${cfg.listenAddress} --port=${toString cfg.listenPort}";
+        };
+      };
+    });
 }

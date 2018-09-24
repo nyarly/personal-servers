@@ -1,7 +1,9 @@
 let
-  blog = import ./packages/blog/default.nix {};
-  wagthepig = import ./package/wagthepig/default.nix {};
   acmeRoot = "/var/run/acme-challenges";
+
+  ports = {
+    wagthepig = 3000;
+  };
 
   buddyNSServers = [
     "173.244.206.26 NOKEY"
@@ -23,9 +25,15 @@ in
     webserver = {  config, pkgs, ... }:
     let
       pubIP = config.networking.publicIPv4;
+      blog = pkgs.callPackage ./packages/blog/default.nix {};
+      wagthepig = pkgs.callPackage ./packages/wagthepig/default.nix {};
     in
     {
-      imports = [ ./module/static-site.nix ];
+      imports = [
+        ./modules/static-site.nix
+        ./modules/app-proxy.nix
+        ./modules/rails-app.nix
+      ];
 
       environment.systemPackages = with pkgs; [ neovim fish ];
 
@@ -45,8 +53,18 @@ in
 
           # Should come from a "appserver bridge" module
           protocol = "http";
-          listenAddress = localhost;
-          listenPort = 3000;
+          listenAddress = "localhost";
+          listenPort = ports.wagthepig;
+
+          database = {
+            adapter = "postgresql";
+            database = "wagthepig";
+            host = "localhost";
+            username = "wagthepig";
+            password = ""; # local trust
+            encoding = "utf8";
+            pool = 5;
+          };
         };
 
         fail2ban = {
@@ -115,6 +133,17 @@ in
         sites = {
           "judsonlester.info" = { docRoot = blog; };
           "madhelm.net"       = { docRoot = blog; };
+        };
+      };
+
+      appProxy = {
+        inherit acmeRoot;
+        sites = {
+          "wagthepig.com" = {
+            backendPort = ports.wagthepig;
+            staticBase = wagthepig; # + "public";
+            staticLocations = [ "assets" "system" ];
+          };
         };
       };
 

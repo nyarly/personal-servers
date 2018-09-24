@@ -28,7 +28,7 @@ with lib;
     };
   };
 
-  config = {
+  config = mkIf (builtins.length (builtins.attrNames config.staticWeb.sites) > 0) {
     services.httpd.virtualHosts = let
       vhosts =  concatLists (mapAttrsToList nameToVHost config.staticWeb.sites);
       nameToVHost = name: hcfg:
