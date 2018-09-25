@@ -138,13 +138,15 @@ in
 
       appProxy = {
         inherit acmeRoot;
-        sites = {
+        sites = builtins.trace (builtins.toPath wagthepig) (
+        builtins.trace (builtins.toPath blog)
+        {
           "wagthepig.com" = {
             backendPort = ports.wagthepig;
-            staticBase = wagthepig; # + "public";
+            staticBase = wagthepig + "/public";
             staticLocations = [ "assets" "system" ];
           };
-        };
+        });
       };
 
       networking.firewall = {

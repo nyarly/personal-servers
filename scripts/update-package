@@ -1,7 +1,12 @@
 #! /usr/bin/env bash
-usage="${0} <repo>"
+usage() {
+  echo "${0} <repo> <local package directory>"
+}
 
-repo=${1:-$usage}
+repo=${1:?$(usage)}
+outdir=${2:?$(usage)}
+
+outdir=$(pwd)/${outdir}
 
 dir=$(commute lookup $repo)
 if [ $? -ne 0 ]; then
@@ -23,4 +28,11 @@ if [ $? -ne 0 ]; then
   exit $? 1&>2
 fi
 
-nix-prefetch-git --no-deepClone --quiet $repo
+echo Getting Git source information
+nix-prefetch-git --no-deepClone --quiet $repo | jq '{rev, sha256}' | tee $outdir/source.json
+
+if [ -e $outdir/synclist.txt ]; then
+  cd $dir
+  rsync -av $(cat $outdir/synclist.txt) $outdir
+fi
+echo

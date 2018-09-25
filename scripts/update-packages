@@ -9,5 +9,5 @@ fi
 
 set -x
 
-update-package git@github.com:nyarly/blog.git > packages/blog/source.json
-update-package git@github.com:nyarly/wagthepig.git > packages/wagthepig/source.json
+update-package git@github.com:nyarly/blog.git packages/blog
+update-package git@github.com:nyarly/wagthepig.git packages/wagthepig

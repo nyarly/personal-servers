@@ -1,7 +1,4 @@
 {
-  "url": "git@github.com:nyarly/blog.git",
   "rev": "200f0dfa9b6f1fc257b12e10d635665f786dc56d",
-  "date": "2018-09-21T10:18:58-07:00",
-  "sha256": "0jgp9w56ghdq4x15854ybkx05yfgwwqw3cc5bv7l7fv2s0x3n2p3",
-  "fetchSubmodules": true
+  "sha256": "0jgp9w56ghdq4x15854ybkx05yfgwwqw3cc5bv7l7fv2s0x3n2p3"
 }

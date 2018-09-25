@@ -16,10 +16,10 @@ stdenv.mkDerivation rec {
   package = name;
   version = "2018-09-17";
 
-  src = fetchFromGitHub {
+  src = fetchFromGitHub (builtins.fromJSON (builtins.readFile ./source.json) // {
     owner = "nyarly";
     repo = "wagthepig";
-  } // import ./source-id.nix;
+  });
 
   buildInputs = [ env ];
 
