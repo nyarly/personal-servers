@@ -1,31 +1,34 @@
-{ stdenv, bundlerEnv, fetchFromGitHub, ruby  }:
+{ stdenv, bundlerEnv, fetchFromGitHub, ruby, nodejs, ... }:
 
 let
+  package = "wagthepig";
+  version = "2018-09-17";
+  owner = "nyarly";
+  repo = "wagthepig";
+
   env = bundlerEnv {
-    name = "wagthepig-railsenv";
+    name = "${package}-${version}-railsenv";
     inherit ruby;
     gemdir = ./.;
   };
 
-  name = "wagthepig";
-
-  runDir = "/run/${name}";
+  runDir = "/run/${package}";
 in
 
 stdenv.mkDerivation rec {
-  package = name;
-  version = "2018-09-17";
+  name = "${package}-${version}";
 
-  src = fetchFromGitHub (builtins.fromJSON (builtins.readFile ./source.json) // {
-    owner = "nyarly";
-    repo = "wagthepig";
-  });
+  src = fetchFromGitHub (
+    builtins.fromJSON
+      (builtins.readFile ./source.json) //
+      { inherit owner repo; }
+  );
 
-  buildInputs = [ env ];
+  buildInputs = [ env nodejs ];
 
   buildPhase = ''
-    cp config/database.yml.template config/database.yml
-    bundler exec rake assets:precompile RAILS_ENV=production
+    echo > config/database.yml
+    ${env}/bin/rake assets:precompile RAILS_ENV=production
   '';
 
   # From frab
@@ -34,12 +37,12 @@ stdenv.mkDerivation rec {
 
   installPhase = ''
     mkdir -p $out/share
-    cp -r . $out/share/${name}
+    cp -r . $out/share/${package}
 
-    ln -sf ${runDir}/database.yml $out/share/${name}/config/database.yml
-    rm -rf $out/share/${name}/tmp $out/share/${name}/public/system
-    ln -sf ${runDir}/system $out/share/${name}/public/system
-    ln -sf /tmp $out/share/${name}/tmp
+    ln -sf ${runDir}/database.yml $out/share/${package}/config/database.yml
+    rm -rf $out/share/${package}/tmp $out/share/${package}/public/system
+    ln -sf ${runDir}/system $out/share/${package}/public/system
+    ln -sf /tmp $out/share/${package}/tmp
   '';
 
   passthru = {

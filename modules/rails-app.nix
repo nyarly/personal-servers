@@ -1,40 +1,6 @@
 { config, lib, pkgs, ... }:
 
 with lib;
-
-let
-  cfg = config.services.wagthepig;
-
-  package = cfg.package;
-
-  databaseConfig = builtins.toJSON { production = cfg.database; };
-
-  appEnv = {
-    RAILS_ENV = "production";
-    RACK_ENV = "production";
-    SECRET_KEY_BASE = cfg.secretKeyBase;
-    FROM_EMAIL = cfg.fromEmail;
-    RAILS_SERVE_STATIC_FILES = "1";
-  } // cfg.extraEnvironment;
-
-  app-rake = pkgs.stdenv.mkDerivation rec {
-    name = "${package.name}-rake";
-    buildInputs = [ package.env pkgs.makeWrapper ];
-    phases = "installPhase fixupPhase";
-    installPhase = ''
-      mkdir -p $out/bin
-      makeWrapper ${package.env}/bin/bundle $out/bin/wrapped-bundle \
-          ${concatStrings (mapAttrsToList (name: value: "--set ${name} '${value}' ") appEnv)} \
-          --set PATH '${lib.makeBinPath (with pkgs; [ nodejs file imagemagick ])}:$PATH' \
-          --set RAKEOPT '-f ${package}/Rakefile' \
-          --run 'cd ${package}'
-      makeWrapper $out/bin/wrapped-bundle $out/bin/wrapped-rake \
-          --add-flags "exec rake"
-     '';
-  };
-
-in
-
 {
   options = {
     services.wagthepig = {
@@ -175,15 +141,45 @@ in
     };
   };
 
-  config = mkIf cfg.enable
+  config = mkIf config.services.wagthepig.enable
   (let
+    cfg = config.services.wagthepig;
+
+    package = cfg.package;
+
+    databaseConfig = builtins.toJSON { production = cfg.database; };
+
+    appEnv = {
+      RAILS_ENV = "production";
+      RACK_ENV = "production";
+      SECRET_KEY_BASE = cfg.secretKeyBase;
+      FROM_EMAIL = cfg.fromEmail;
+      RAILS_SERVE_STATIC_FILES = "1";
+    } // cfg.extraEnvironment;
+
+    app-rake = pkgs.stdenv.mkDerivation rec {
+      name = "${package.name}-rake";
+      buildInputs = [ package.env pkgs.makeWrapper ];
+      phases = "installPhase fixupPhase";
+      installPhase = ''
+        mkdir -p $out/bin
+        makeWrapper ${package.env}/bin/bundle $out/bin/wrapped-bundle \
+            ${concatStrings (mapAttrsToList (name: value: "--set ${name} '${value}' ") appEnv)} \
+            --set PATH '${lib.makeBinPath (with pkgs; [ nodejs file imagemagick ])}:$PATH' \
+            --set RAKEOPT '-f ${package}/Rakefile' \
+            --run 'cd ${package}'
+        makeWrapper $out/bin/wrapped-bundle $out/bin/wrapped-rake \
+            --add-flags "exec rake"
+       '';
+    };
+
     createDBuser = options:
       let
         db = options.services.wagthepig.database;
       in
         if db.adapter == "postgresql" then
           let
-            pg = options.service.postgres;
+            pg = options.services.postgresql;
           in
             ''
               while ! ${pg.package}/bin/pg_isready -h ${db.host} do
@@ -220,7 +216,7 @@ in
           ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} ${package.runDir}/database.yml
           ln -sf ${cfg.statePath}/system ${package.runDir}/system
 
-          ${createDBuser options}
+          ${createDBuser config}
 
           if ! test -e "${cfg.statePath}/db-setup-done"; then
             ${app-rake}/bin/wrapped-rake db:setup

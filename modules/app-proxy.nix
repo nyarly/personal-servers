@@ -12,12 +12,12 @@ with lib;
         default = {};
         type = with types; attrsOf (submodule {
           options = {
-            backedHost = mkOption {
+            backendHost = mkOption {
               type = str;
               default = "localhost";
             };
             backendPort = mkOption {
-              type = int;
+              type = ints.between 1 65535;
             };
             staticBase = mkOption {
               type = path;
@@ -67,7 +67,7 @@ with lib;
             <Location>
           '') hcfg.staticLocations;
 
-          backend = "${hcfg.backendHost}:${hcfg.backendPort}";
+          backend = "${hcfg.backendHost}:${toString hcfg.backendPort}";
         in
         [
           {

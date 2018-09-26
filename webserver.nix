@@ -37,6 +37,8 @@ in
 
       environment.systemPackages = with pkgs; [ neovim fish ];
 
+      deployment.keys = import ./webserver-keys.nix;
+
       fileSystems = {
         "/var/lib" = {
           device = "/dev/xvdf";
@@ -65,6 +67,8 @@ in
             encoding = "utf8";
             pool = 5;
           };
+
+          secretKeyBase = "testsecret";
         };
 
         fail2ban = {
@@ -138,15 +142,13 @@ in
 
       appProxy = {
         inherit acmeRoot;
-        sites = builtins.trace (builtins.toPath wagthepig) (
-        builtins.trace (builtins.toPath blog)
-        {
+        sites = {
           "wagthepig.com" = {
             backendPort = ports.wagthepig;
             staticBase = wagthepig + "/public";
             staticLocations = [ "assets" "system" ];
           };
-        });
+        };
       };
 
       networking.firewall = {
