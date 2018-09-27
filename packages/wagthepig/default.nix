@@ -1,4 +1,4 @@
-{ stdenv, bundlerEnv, fetchFromGitHub, ruby, nodejs, ... }:
+{ stdenv, bundlerEnv, fetchFromGitHub, ruby, nodejs, masterKey, ... }:
 
 let
   package = "wagthepig";
@@ -27,8 +27,8 @@ stdenv.mkDerivation rec {
   buildInputs = [ env nodejs ];
 
   buildPhase = ''
-    echo > config/database.yml
-    ${env}/bin/rake assets:precompile RAILS_ENV=production
+    echo '${builtins.readFile ./dummy_database.yml}' > config/database.yml
+    RAILS_MASTER_KEY=${masterKey} ${env}/bin/rake assets:precompile RAILS_ENV=production
   '';
 
   # From frab
@@ -39,9 +39,11 @@ stdenv.mkDerivation rec {
     mkdir -p $out/share
     cp -r . $out/share/${package}
 
+    rm -rf $out/share/${package}/tmp $out/share/${package}/public/system $out/share/${package}/log
+
     ln -sf ${runDir}/database.yml $out/share/${package}/config/database.yml
-    rm -rf $out/share/${package}/tmp $out/share/${package}/public/system
     ln -sf ${runDir}/system $out/share/${package}/public/system
+    ln -sf ${runDir}/log $out/share/${package}/log
     ln -sf /tmp $out/share/${package}/tmp
   '';
 

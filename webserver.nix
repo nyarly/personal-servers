@@ -24,9 +24,12 @@ in
 
     webserver = {  config, pkgs, ... }:
     let
+      keys = import ./webserver-keys.nix;
       pubIP = config.networking.publicIPv4;
       blog = pkgs.callPackage ./packages/blog/default.nix {};
-      wagthepig = pkgs.callPackage ./packages/wagthepig/default.nix {};
+      wagthepig = pkgs.callPackage ./packages/wagthepig/default.nix {
+        masterKey = keys.wagthepig.text;
+      };
     in
     {
       imports = [
@@ -37,7 +40,7 @@ in
 
       environment.systemPackages = with pkgs; [ neovim fish ];
 
-      deployment.keys = import ./webserver-keys.nix;
+      deployment.keys = keys;
 
       fileSystems = {
         "/var/lib" = {
@@ -87,6 +90,16 @@ in
         postgresql = {
           enable = true;
           package = pkgs.postgresql100;
+          authentication = ''
+            local   all             all                                     trust
+            host    all             all             127.0.0.1/32            trust
+            host    all             all             ::1/128                 trust
+            # Allow replication connections from localhost, by a user with the
+            # replication privilege.
+            local   replication     all                                     trust
+            host    replication     all             127.0.0.1/32            trust
+            host    replication     all             ::1/128                 trust
+          '';
         };
 
         httpd = {

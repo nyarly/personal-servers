@@ -152,26 +152,11 @@ with lib;
     appEnv = {
       RAILS_ENV = "production";
       RACK_ENV = "production";
-      SECRET_KEY_BASE = cfg.secretKeyBase;
+      # SECRET_KEY_BASE = cfg.secretKeyBase;
       FROM_EMAIL = cfg.fromEmail;
       RAILS_SERVE_STATIC_FILES = "1";
+      BOOTSNAP_CACHE_DIR = cfg.statePath + "/tmp/cache";
     } // cfg.extraEnvironment;
-
-    app-rake = pkgs.stdenv.mkDerivation rec {
-      name = "${package.name}-rake";
-      buildInputs = [ package.env pkgs.makeWrapper ];
-      phases = "installPhase fixupPhase";
-      installPhase = ''
-        mkdir -p $out/bin
-        makeWrapper ${package.env}/bin/bundle $out/bin/wrapped-bundle \
-            ${concatStrings (mapAttrsToList (name: value: "--set ${name} '${value}' ") appEnv)} \
-            --set PATH '${lib.makeBinPath (with pkgs; [ nodejs file imagemagick ])}:$PATH' \
-            --set RAKEOPT '-f ${package}/Rakefile' \
-            --run 'cd ${package}'
-        makeWrapper $out/bin/wrapped-bundle $out/bin/wrapped-rake \
-            --add-flags "exec rake"
-       '';
-    };
 
     createDBuser = options:
       let
@@ -182,10 +167,10 @@ with lib;
             pg = options.services.postgresql;
           in
             ''
-              while ! ${pg.package}/bin/pg_isready -h ${db.host} do
+              while ! ${pg.package}/bin/pg_isready -h ${db.host}; do
                 sleep 0.1
               done
-              createuser -U ${pg.superUser} --echo --createdb --no-createrole --no-superuser ${db.username} || echo "already exists (probably)"
+              ${pg.package}/bin/createuser -U ${pg.superUser} -h ${db.host} --echo --createdb --no-createrole --no-superuser ${db.username} || echo "already exists (probably)"
             ''
         else "echo Don't know how to set up user for database adapter: ${db.adapter}";
 
@@ -195,6 +180,7 @@ with lib;
         users = [
           { name = cfg.user;
             group = cfg.group;
+            extraGroups = [ "keys" ];
             home = "${cfg.statePath}";
           }
         ];
@@ -202,28 +188,40 @@ with lib;
         groups = [ { name = cfg.group; } ];
       };
 
-
       systemd.services.wagthepig = {
-        after = [ "network.target" ];
+        after = [ "network.target" "wagthepig-key"];
+        wants = [ "wagthepig-key" ];
         wantedBy = [ "multi-user.target" ];
         environment = appEnv;
 
+        path = [ pkgs.nodejs ];
+
         preStart = ''
+          mkdir -p $BOOTSNAP_CACHE_DIR
           mkdir -p ${cfg.statePath}/system/attachments
+          mkdir -p ${cfg.statePath}/log
           chown ${cfg.user}:${cfg.group} -R ${cfg.statePath}
 
           mkdir ${package.runDir} -p
           ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} ${package.runDir}/database.yml
           ln -sf ${cfg.statePath}/system ${package.runDir}/system
+          ln -sf ${cfg.statePath}/log ${package.runDir}/log
 
           ${createDBuser config}
 
+          export RAILS_MASTER_KEY=$(cat /run/keys/wagthepig)
           if ! test -e "${cfg.statePath}/db-setup-done"; then
-            ${app-rake}/bin/wrapped-rake db:setup
+            ${package.env}/bin/rake db:setup
             touch ${cfg.statePath}/db-setup-done
           else
-            ${app-rake}/bin/wrapped-rake db:migrate
+            ${package.env}/bin/rake db:migrate
           fi
+        '';
+
+        script = ''
+          id
+          export RAILS_MASTER_KEY=$(cat /run/keys/wagthepig)
+          ${package.env}/bin/rails server --binding=${cfg.listenAddress} --port=${toString cfg.listenPort}
         '';
 
         serviceConfig = {
@@ -236,9 +234,7 @@ with lib;
           TimeoutSec = "300s";
           Restart = "on-failure";
           RestartSec = "10s";
-          WorkingDirectory = "${package}";
-          ExecStart = "${app-rake}/bin/wrapped-bundle exec rails server " +
-            "--binding=${cfg.listenAddress} --port=${toString cfg.listenPort}";
+          WorkingDirectory = "${package}/share/wagthepig";
         };
       };
     });

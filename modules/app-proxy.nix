@@ -54,7 +54,7 @@ with lib;
           acmeConfig = if hcfg.acmeEnabled then ''
             <Location /.well-known/acme-challenge>
               ProxyPass !
-            </location>
+            </Location>
             Alias "/.well-known/acme-challenge" "${config.appProxy.acmeRoot}/${name}/.well-known/acme-challenge"
             <Directory ${config.appProxy.acmeRoot}/${name}>
               Require all granted
@@ -64,7 +64,7 @@ with lib;
           excludedLocations = map (loc: ''
             <Location /${loc}>
               ProxyPass !
-            <Location>
+            </Location>
           '') hcfg.staticLocations;
 
           backend = "${hcfg.backendHost}:${toString hcfg.backendPort}";
@@ -90,6 +90,7 @@ with lib;
             sslServerKey = "/var/lib/acme/${name}/key.pem";
 
             extraConfig = ''
+              RequestHeader set X-Forwarded-Proto "https"
               ProxyPass / http://${backend}/
               ProxyPassReverse / http://${backend}/
               ${toString excludedLocations}
