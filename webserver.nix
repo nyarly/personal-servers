@@ -158,7 +158,7 @@ in
         sites = {
           "wagthepig.com" = {
             backendPort = ports.wagthepig;
-            staticBase = wagthepig + "/public";
+            staticBase = wagthepig + "/share/wagthepig/public";
             staticLocations = [ "assets" "system" ];
           };
         };
