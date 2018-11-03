@@ -1,5 +1,6 @@
 source "https://rubygems.org"
 
+gem "bundler-audit"
 gem "jekyll", '~> 3.1'
 gem "rake"
 gem "unidecode"
