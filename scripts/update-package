@@ -10,7 +10,7 @@ outdir=$(pwd)/${outdir}
 
 dir=$(commute lookup $repo)
 if [ $? -ne 0 ]; then
-  echo "No workspace known for $repo!" 1&>2
+  echo "No workspace known for $repo!" 1>&2
   exit 1
 fi
 
@@ -25,7 +25,7 @@ fi
 )
 
 if [ $? -ne 0 ]; then
-  exit $? 1&>2
+  exit $? 1>&2
 fi
 
 echo Getting Git source information
