@@ -91,6 +91,14 @@ in
               transport = remote_smtp
               ignore_target_hosts = 0.0.0.0 : 127.0.0.0/8
               no_more
+
+            begin transports
+            remote_smtp:
+              driver = smtp
+              hosts_try_prdr = *
+
+            begin retry
+            *   *   F,2h,15m; G,16h,1h,1.5; F,4d,6h
           '';
         };
 
