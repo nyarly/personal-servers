@@ -82,7 +82,7 @@ in
 
             begin acl
             local_relay:
-              accept hosts = 127.0.0.1 : :1 : localhost
+              accept hosts = 127.0.0.1 : ::1 : localhost
           '';
         };
 
