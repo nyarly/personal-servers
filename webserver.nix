@@ -76,6 +76,14 @@ in
 
         exim = {
           enable = true;
+          config = ''
+            tls_advertise_hosts =
+            acl_smtp_rcpt = local_relay
+
+            begin acl
+            local_relay:
+              accept host = localhost
+          '';
         };
 
         fail2ban = {
