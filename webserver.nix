@@ -83,6 +83,14 @@ in
             begin acl
             local_relay:
               accept hosts = 127.0.0.1 : ::1 : localhost
+
+            begin routers
+            dnslookup:
+              driver = dnslookup
+              domains = ! +local_domains
+              transport = remote_smtp
+              ignore_target_hosts = 0.0.0.0 : 127.0.0.0/8
+              no_more
           '';
         };
 
