@@ -74,6 +74,10 @@ in
           secretKeyBase = "testsecret";
         };
 
+        exim = {
+          enable = true;
+        };
+
         fail2ban = {
           enable = true;
           jails = {
