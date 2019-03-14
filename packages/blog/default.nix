@@ -15,12 +15,15 @@ in
   stdenv.mkDerivation {
     name = "blog-jdl";
 
-    src = fetchFromGitHub (
-      builtins.fromJSON
-      (builtins.readFile ./source.json) // {
+    src = if builtins.pathExists(./source.nix) then
+      fetchFromGitHub {
         owner = "nyarly";
         repo = "blog";
-        } );
+        rev = import ./commit.nix;
+        sha256 = import ./source.nix;
+        }
+    else
+      ./.;
 
     buildInputs = [
       rubyEnv
