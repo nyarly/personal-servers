@@ -10,6 +10,7 @@ let
     name = "${package}-${version}-railsenv";
     inherit ruby;
     gemdir = ./.;
+    groups = ["default"];
   };
 
   runDir = "/run/${package}";

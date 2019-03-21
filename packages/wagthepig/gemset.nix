@@ -178,12 +178,14 @@
   };
   devise = {
     dependencies = ["bcrypt" "orm_adapter" "railties" "responders" "warden"];
+    groups = ["default"];
+    platforms = [];
     source = {
       remotes = ["https://rubygems.org"];
-      sha256 = "1vs8nibl568ghm6a7hbw6xgcv8zbm4gykprcxpnzi7bz5d4gvcjx";
+      sha256 = "01ms6gz88zx953vwdkw4aa095kdd18mjgbzxamvlwbc674bhlvv5";
       type = "gem";
     };
-    version = "4.5.0";
+    version = "4.6.1";
   };
   diff-lcs = {
     source = {
@@ -495,14 +497,26 @@
     };
     version = "0.9.10";
   };
-  responders = {
-    dependencies = ["actionpack" "railties"];
+  redcarpet = {
+    groups = ["default"];
+    platforms = [];
     source = {
       remotes = ["https://rubygems.org"];
-      sha256 = "1rhdyyvvm26f2l3fgwdp6xasfl2y0whwgy766bhdwz697mf78zfn";
+      sha256 = "0h9qz2hik4s9knpmbwrzb3jcp3vc5vygp9ya8lcpl7f1l9khmcd7";
       type = "gem";
     };
-    version = "2.4.0";
+    version = "3.4.0";
+  };
+  responders = {
+    dependencies = ["actionpack" "railties"];
+    groups = ["default"];
+    platforms = [];
+    source = {
+      remotes = ["https://rubygems.org"];
+      sha256 = "18lqbiyc7234vd6iwxia5yvvzg6bdvdwl2nm4a5y7ia5fxjl3kqm";
+      type = "gem";
+    };
+    version = "2.4.1";
   };
   rspec = {
     dependencies = ["rspec-core" "rspec-expectations" "rspec-mocks"];
@@ -704,12 +718,14 @@
   };
   warden = {
     dependencies = ["rack"];
+    groups = ["default"];
+    platforms = [];
     source = {
       remotes = ["https://rubygems.org"];
-      sha256 = "0va966lhpylcwbqb9n151kkihx30agh0a57mwjwdxyanll4s1q12";
+      sha256 = "1fr9n9i9r82xb6i61fdw4xgc7zjv7fsdrr4k0njchy87iw9fl454";
       type = "gem";
     };
-    version = "1.2.7";
+    version = "1.2.8";
   };
   web-console = {
     dependencies = ["actionview" "activemodel" "bindex" "railties"];
