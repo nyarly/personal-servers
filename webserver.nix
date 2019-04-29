@@ -176,7 +176,7 @@ in
         taskserver = {
           enable = true;
           fqdn = "tasks.madhelm.net";
-          listenHost = "::";
+          listenHost = "0.0.0.0";
           organisations = {
             madhelm.users = [ "judson" ];
           };
