@@ -148,7 +148,7 @@ in
               data = ''
                 $TTL 18000  ; 5 hours
                 @ IN SOA  ns1.lrdesign.com. nyarly.gmail.com. (
-                    2018052701 ; serial
+                    2019042901 ; serial
                     10800      ; refresh (3 hours)
                     3600       ; retry (1 hour)
                     18000      ; expire (5 hours)
@@ -166,10 +166,20 @@ in
                 gems           CNAME  @
                 repos          CNAME  @
                 www            CNAME  @
+                tasks          CNAME  @
               '';
             };
           };
 
+        };
+
+        taskserver = {
+          enable = true;
+          fqdn = "tasks.madhelm.net";
+          listenHost = "::";
+          organisations = {
+            madhelm.users = [ "judson" ];
+          };
         };
       };
 
