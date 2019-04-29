@@ -117,7 +117,7 @@ in
 
         postgresql = {
           enable = true;
-          package = pkgs.postgresql100;
+          package = pkgs.postgresql_10;
           authentication = ''
             local   all             all                                     trust
             host    all             all             127.0.0.1/32            trust
