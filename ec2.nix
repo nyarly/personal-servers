@@ -17,6 +17,7 @@ let
           serveDNS.name
           serveHTTP.name
           serveHTTPS.name
+          serveTaskd.name
         ];
         blockDeviceMapping = {
           "/dev/xvdf" = {
@@ -87,6 +88,15 @@ in
             sourceIp = "0.0.0.0/0";
             fromPort = 0;
             toPort = 443;
+          }];
+        };
+
+        serveTaskd = {...}: {
+          inherit region accessKeyId;
+          rules = [{
+            sourceIp = "0.0.0.0/0";
+            fromPort = 0;
+            toPort = 53589;
           }];
         };
       };
