@@ -206,5 +206,10 @@ in
         allowedTCPPorts = [ 22 53 80 443 ];
         allowedUDPPorts = [ 53 ];
       };
+
+      users.users.root.openssh.authorizedKeys.keyFiles = [
+        ssh-keys/root-1.pub
+        ssh-keys/root-2.pub
+      ];
     };
   }
