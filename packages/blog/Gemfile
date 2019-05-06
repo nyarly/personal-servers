@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 gem "bundler-audit"
-gem "jekyll", '~> 3.1'
+gem "jekyll", '~> 3.7'
 gem "rake"
 gem "unidecode"
 gem "sequel"
