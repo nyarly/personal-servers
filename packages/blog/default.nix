@@ -17,6 +17,7 @@ in
 
     src = if builtins.pathExists(./source.nix) then
       fetchFromGitHub {
+        private = true;
         owner = "nyarly";
         repo = "blog";
         rev = import ./commit.nix;
