@@ -15,14 +15,11 @@ in
   stdenv.mkDerivation {
     name = "blog-jdl";
 
-    src = if builtins.pathExists(./source.nix) then
-      fetchFromGitHub {
-        private = true;
-        owner = "nyarly";
-        repo = "blog";
-        rev = import ./commit.nix;
-        sha256 = import ./source.nix;
-        }
+    src = if builtins.pathExists(./source.json) then
+    fetchFromGitHub (
+      builtins.fromJSON (builtins.readFile ./source.json) //
+      { private = true; owner = "nyarly"; repo = "blog"; }
+    )
     else
       ./.;
 
