@@ -167,6 +167,7 @@ in
                 repos          CNAME  @
                 www            CNAME  @
                 tasks          CNAME  @
+                @          IN  TXT    "v=spf1 +a +mx ip4:${pubIP} -all"
               '';
             };
           };
