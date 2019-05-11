@@ -168,6 +168,7 @@ in
                 www            CNAME  @
                 tasks          CNAME  @
                 @          IN  TXT    "v=spf1 +a +mx ip4:${pubIP} -all"
+                @          IN  TXT    "google-site-verification=PdMCpmcPxMhcuIeabkjGH2AcasilKqCatBs98MxkImk"
               '';
             };
           };
