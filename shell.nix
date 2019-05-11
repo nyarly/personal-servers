@@ -1,7 +1,5 @@
 { pkgs ? import <nixpkgs> {} }:
 with pkgs;
-stdenv.mkDerivation {
-  name = "personal-servers";
+mkShell {
   buildInputs = [ nixops ];
-  nativeBuildInputs = [  ];
 }
