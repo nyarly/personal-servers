@@ -189,8 +189,8 @@ with lib;
       };
 
       systemd.services.wagthepig = {
-        after = [ "network.target" "wagthepig-key"];
-        wants = [ "wagthepig-key" ];
+        after = [ "network.target" "wagthepig-key.service"];
+        wants = [ "wagthepig-key.service" ];
         wantedBy = [ "multi-user.target" ];
         environment = appEnv;
 
