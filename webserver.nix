@@ -98,19 +98,26 @@ in
         exim = {
           enable = true;
           config = ''
+            keep_environment = # suppress warning about purged environment
+            # use set_environment if there are vars we want
+
             tls_advertise_hosts =
             acl_smtp_rcpt = local_relay
 
+            domainlist local_domains = <; 127.0.0.1 ; ::1 ; localhost
+
+            trusted_users = wagthepig
+
             begin acl
             local_relay:
-              accept hosts = 127.0.0.1 : ::1 : localhost
+              accept hosts = +local_domains
 
             begin routers
             dnslookup:
               driver = dnslookup
-              domains = ! localhost
+              domains = ! +local_domains
               transport = remote_smtp
-              ignore_target_hosts = 0.0.0.0 : 127.0.0.0/8
+              ignore_target_hosts = <; 0.0.0.0 ; 127.0.0.0/8 ; ::1
               no_more
 
             begin transports
@@ -124,7 +131,7 @@ in
               dkim_timestamps = 1209600
 
             begin retry
-            *   *   F,2h,15m; G,16h,1h,1.5; F,4d,6h
+              *   *   F,2h,15m; G,16h,1h,1.5; F,4d,6h
 
           '';
         };
@@ -175,7 +182,7 @@ in
               data = ''
                 $TTL 18000  ; 5 hours
                 @ IN SOA  ns1.lrdesign.com. nyarly.gmail.com. (
-                    2019051701 ; serial
+                    2019052001 ; serial
                     10800      ; refresh (3 hours)
                     3600       ; retry (1 hour)
                     18000      ; expire (5 hours)
@@ -200,6 +207,7 @@ in
                 dkim._domainkey IN  TXT ("v=DKIM1\; t=y\; k=rsa\; p="
                   ${dnsLines secrets/dkim.cert.bare}
                   )
+                @          IN  TXT    "v=DMARC1;p=none;sp=none;ruf=mailto:nyarly@gmail.com"
               '';
             };
           };
@@ -249,6 +257,8 @@ in
       };
 
       users.users = {
+        wagthepig.extraGroups = [ "exim" ];
+
         root.openssh.authorizedKeys.keyFiles = [
           ssh-keys/root-1.pub
           ssh-keys/root-2.pub
