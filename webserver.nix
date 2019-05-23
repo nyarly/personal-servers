@@ -105,12 +105,13 @@ in
             acl_smtp_rcpt = local_relay
 
             domainlist local_domains = <; 127.0.0.1 ; ::1 ; localhost
+            hostlist local_hosts = <; 127.0.0.1 ; ::1 ; localhost
 
             trusted_users = wagthepig
 
             begin acl
             local_relay:
-              accept hosts = +local_domains
+              accept hosts = +local_hosts
 
             begin routers
             dnslookup:
@@ -182,7 +183,7 @@ in
               data = ''
                 $TTL 18000  ; 5 hours
                 @ IN SOA  ns1.lrdesign.com. nyarly.gmail.com. (
-                    2019052001 ; serial
+                    2019052003 ; serial
                     10800      ; refresh (3 hours)
                     3600       ; retry (1 hour)
                     18000      ; expire (5 hours)
@@ -207,7 +208,8 @@ in
                 dkim._domainkey IN  TXT ("v=DKIM1\; t=y\; k=rsa\; p="
                   ${dnsLines secrets/dkim.cert.bare}
                   )
-                @          IN  TXT    "v=DMARC1;p=none;sp=none;ruf=mailto:nyarly@gmail.com"
+                @          IN  TXT    "v=DMARC1;p=reject;sp=reject;ruf=mailto:nyarly@gmail.com"
+                _dmarc     IN  TXT    "v=DMARC1;p=reject;sp=reject;ruf=mailto:nyarly@gmail.com"
               '';
             };
           };
