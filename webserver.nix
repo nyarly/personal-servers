@@ -104,6 +104,8 @@ in
             tls_advertise_hosts =
             acl_smtp_rcpt = local_relay
 
+            disable_ipv6 = true
+
             domainlist local_domains = <; 127.0.0.1 ; ::1 ; localhost
             hostlist local_hosts = <; 127.0.0.1 ; ::1 ; localhost
 
