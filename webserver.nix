@@ -43,7 +43,7 @@ in
 
     webserver = { lib, config, pkgs, ... }:
     let
-      keys = import ./webserver-keys.nix;
+      keys = import ./secrets/webserver-keys.nix;
       pubIP = config.networking.publicIPv4;
       blog = pkgs.callPackage ./packages/blog/default.nix {};
       wagthepig = pkgs.callPackage ./packages/wagthepig/default.nix {
