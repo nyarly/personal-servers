@@ -1,2 +1,3 @@
 *-keys.nix filter=git-crypt diff=git-crypt
 secrets/* filter=git-crypt diff=git-crypt
+deployments.nixops filter=git-crypt
