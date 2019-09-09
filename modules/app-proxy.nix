@@ -3,7 +3,7 @@ with lib;
 {
   options = {
     appProxy = {
-        acmeRoot = mkOption {
+      acmeRoot = mkOption {
         type = with types; path;
         description = "The path that ACME clients will use for challenges.";
       };

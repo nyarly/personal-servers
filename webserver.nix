@@ -57,6 +57,7 @@ in
         ./modules/static-site.nix
         ./modules/app-proxy.nix
         ./modules/rails-app.nix
+        ./modules/taskserver-acme.nix
       ];
 
       environment.systemPackages = with pkgs; [ neovim fish ];
