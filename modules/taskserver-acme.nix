@@ -7,10 +7,10 @@ in
   {
     options = with types;
     {
-      taskserverAcme = (builtins.removeAttrs opts.services.taskserver [
+      taskserverAcme = (lib.traceVal ((builtins.removeAttrs opts.services.taskserver [
+        "_definedNames"
         "enable"
-        "auto"
-        "manual"
+        "pki"
       ]) //
       {
         enable = mkOption {
@@ -34,43 +34,39 @@ in
           type = string;
           description = "The administrator's email (sent to LetEncrypt)";
         };
-      };
+      }));
     };
 
     config = mkIf (cfg.enable) (let
-      acmeTargetPath = cfg.acmeRoot + "./${cfg.fqdn}";
-      taskserverOpts = getAttrs (builtins.attrNames opts.services.taskserver) cfg;
+      acmeTargetPath = "${cfg.acmeRoot}/${cfg.fqdn}";
+      taskserverOpts = with builtins;
+        getAttrs (subtractLists ["_definedNames" "extraConfig"] (attrNames opts.services.taskserver)) cfg;
     in
     {
       services.taskserver = taskserverOpts // {
         enable = true;
-        manual = {
+        pki.manual = {
           #ca.cert = "";
           #server.crl = "";
 
-          server.cert = acmeTargetPath + ./full.pem;
+          server.cert = "${acmeTargetPath}/full.pem";
 
-          server.key = acmeTargetPath + ./key.pem;
+          server.key = "${acmeTargetPath}/key.pem";
         };
       };
 
-      security.acme.certs = [
-        {
-          name = cfg.fqdn;
-          value = {
-            webroot = acmeTargetPath;
-            email = cfg.email;
-            postRun = "systemctl reload taskserver.service";
-          };
-        }
-      ];
+      security.acme.certs.${cfg.fqdn} = {
+        webroot = acmeTargetPath;
+        email = cfg.email;
+        postRun = "systemctl reload taskserver.service";
+      };
 
       services.httpd.virtualHosts = [{
         hostName = cfg.fqdn;
         listen = [{ port = 80; }];
 
         documentRoot = staticBase;
-        extraConfig = "Redirect / https://${cfg.fqdn}/";
+        #extraConfig = "Redirect / https://${cfg.fqdn}/";
       }
 
       {
@@ -82,6 +78,7 @@ in
         sslServerCert = "/var/lib/acme/${cfg.fqdn}/full.pem";
         sslServerKey = "/var/lib/acme/${cfg.fqdn}/key.pem";
 
+        /*
         extraConfig = ''
               RequestHeader set X-Forwarded-Proto "https"
               Alias "/.well-known/acme-challenge" "${acmeTargetPath}/.well-known/acme-challenge"
@@ -89,6 +86,7 @@ in
                 Require all granted
               </Directory>
         '';
+        */
       }];
     });
   }

@@ -219,14 +219,6 @@ in
 
         };
 
-        taskserver = {
-          enable = true;
-          fqdn = "tasks.madhelm.net";
-          listenHost = "0.0.0.0";
-          organisations = {
-            madhelm.users = [ "judson" ];
-          };
-        };
       };
 
       systemd.services.exim = {
@@ -235,6 +227,16 @@ in
         preStart = ''
           install -o exim -g exim -m 0400 /run/keys/dkim /var/spool/exim/dkim.key
           '';
+      };
+
+      taskserverAcme = {
+        inherit acmeRoot;
+        enable = true;
+        fqdn = "tasks.madhelm.net";
+        listenHost = "0.0.0.0";
+        organisations = {
+          madhelm.users = [ "judson" ];
+        };
       };
 
       staticWeb = {
