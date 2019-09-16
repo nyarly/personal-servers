@@ -1,27 +1,22 @@
 { options, config, lib, pkgs, ...}:
 with lib;
 let
-  cfg = config.taskserverAcme;
-  opts = options;
+  cfg = config.services.taskserverAcme;
+  tscfg = config.services.taskserver;
 in
   {
     options = with types;
     {
-      taskserverAcme = (lib.traceVal ((builtins.removeAttrs opts.services.taskserver [
-        "_definedNames"
-        "enable"
-        "pki"
-      ]) //
-      {
+      services.taskserverAcme = {
         enable = mkOption {
           type = types.bool;
           default = false;
           description = ''
-            Whether to enable the Taskwarrior server.
+                Whether to enable the Taskwarrior server.
 
-            More instructions about NixOS in conjuction with Taskserver can be
-            found in the NixOS manual at
-            <olink targetdoc="manual" targetptr="module-taskserver"/>.
+                More instructions about NixOS in conjuction with Taskserver can be
+                found in the NixOS manual at
+                <olink targetdoc="manual" targetptr="module-taskserver"/>.
           '';
         };
 
@@ -34,59 +29,61 @@ in
           type = string;
           description = "The administrator's email (sent to LetEncrypt)";
         };
-      }));
+      };
     };
 
-    config = mkIf (cfg.enable) (let
-      acmeTargetPath = "${cfg.acmeRoot}/${cfg.fqdn}";
-      taskserverOpts = with builtins;
-        getAttrs (subtractLists ["_definedNames" "extraConfig"] (attrNames opts.services.taskserver)) cfg;
-    in
-    {
-      services.taskserver = taskserverOpts // {
-        enable = true;
-        pki.manual = {
-          #ca.cert = "";
-          #server.crl = "";
-
-          server.cert = "${acmeTargetPath}/full.pem";
-
-          server.key = "${acmeTargetPath}/key.pem";
-        };
-      };
-
-      security.acme.certs.${cfg.fqdn} = {
-        webroot = acmeTargetPath;
-        email = cfg.email;
-        postRun = "systemctl reload taskserver.service";
-      };
-
-      services.httpd.virtualHosts = [{
-        hostName = cfg.fqdn;
-        listen = [{ port = 80; }];
-
-        documentRoot = staticBase;
-        #extraConfig = "Redirect / https://${cfg.fqdn}/";
-      }
-
+    config = (mkIf cfg.enable ( let
+        acmeTargetPath = "${cfg.acmeRoot}/${tscfg.fqdn}";
+      in
       {
-        hostName = cfg.fqdn;
-        listen = [{ port = 443; }];
+        services.taskserver = {
+          enable = true;
+          pki.auto = {};
+          pki.manual = {
+            ca.cert = "/var/lib/acme/${tscfg.fqdn}/chain.pem";
+            server.crl = "/var/lib/acme/${tscfg.fqdn}/server.crl";
 
-        documentRoot = staticBase;
-        enableSSL = true;
-        sslServerCert = "/var/lib/acme/${cfg.fqdn}/full.pem";
-        sslServerKey = "/var/lib/acme/${cfg.fqdn}/key.pem";
+            server.cert = "/var/lib/acme/${tscfg.fqdn}/cert.pem";
 
-        /*
-        extraConfig = ''
-              RequestHeader set X-Forwarded-Proto "https"
-              Alias "/.well-known/acme-challenge" "${acmeTargetPath}/.well-known/acme-challenge"
-              <Directory ${acmeTargetPath}>
-                Require all granted
-              </Directory>
-        '';
-        */
-      }];
-    });
+            server.key = "/var/lib/acme/${tscfg.fqdn}/key.pem";
+          };
+        };
+
+        security.acme.certs.${tscfg.fqdn} = {
+          webroot = acmeTargetPath;
+          email = cfg.email;
+          user = "taskd";
+          group = "taskd";
+          allowKeysForGroup = true;
+          plugins = ["cert.pem" "key.pem" "chain.pem" "account_key.json"];
+          postRun = "systemctl reload taskserver.service";
+        };
+
+        services.httpd.virtualHosts = [{
+          hostName = tscfg.fqdn;
+          listen = [{ port = 80; }];
+
+          #documentRoot = staticBase;
+          extraConfig = "Redirect / https://${tscfg.fqdn}/";
+        }
+
+        {
+          hostName = tscfg.fqdn;
+          listen = [{ port = 443; }];
+
+          #documentRoot = staticBase;
+          enableSSL = true;
+          sslServerCert = "/var/lib/acme/${tscfg.fqdn}/full.pem";
+          sslServerKey = "/var/lib/acme/${tscfg.fqdn}/key.pem";
+
+          extraConfig = ''
+          RequestHeader set X-Forwarded-Proto "https"
+          Alias "/.well-known/acme-challenge" "${acmeTargetPath}/.well-known/acme-challenge"
+          <Directory ${acmeTargetPath}>
+          Require all granted
+          </Directory>
+          '';
+        }];
+      })
+    );
   }
