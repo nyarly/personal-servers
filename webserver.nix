@@ -205,6 +205,8 @@ in
                 repos          CNAME  @
                 www            CNAME  @
                 tasks          CNAME  @
+              '';
+              /*
                 @          IN  TXT    "v=spf1 +a +mx ip4:${pubIP} -all"
                 @          IN  TXT    "google-site-verification=PdMCpmcPxMhcuIeabkjGH2AcasilKqCatBs98MxkImk"
                 _domainkey IN  TXT    "o=-\;"
@@ -214,6 +216,7 @@ in
                 @          IN  TXT    "v=DMARC1;p=reject;sp=reject;ruf=mailto:nyarly@gmail.com"
                 _dmarc     IN  TXT    "v=DMARC1;p=reject;sp=reject;ruf=mailto:nyarly@gmail.com"
               '';
+              */
             };
           };
 
@@ -235,14 +238,6 @@ in
         };
       };
 
-      systemd.services.exim = {
-        after = ["dkim-key.service"];
-        wants = ["dkim-key.service"];
-        preStart = ''
-          install -o exim -g exim -m 0400 /run/keys/dkim /var/spool/exim/dkim.key
-          '';
-      };
-
       staticWeb = {
         inherit acmeRoot;
         sites = {
@@ -258,6 +253,12 @@ in
             backendPort = ports.wagthepig;
             staticBase = wagthepig + "/share/wagthepig/public";
             staticLocations = [ "assets" "system" ];
+            extraDNS = ''
+              @                                             IN MX      10 inbound-smtp.us-west-2.amazonaws.com.
+              _amazonses                                    IN TXT     OcC8Uz9saTf9WWsl7sFFkx4LKPe33jP7GBBBQ4y1k6E=
+              2j6jkg6lfr5tuqofswar3xi4o7ey3243._domainkey   IN CNAME   2j6jkg6lfr5tuqofswar3xi4o7ey3243.dkim.amazonses.com.
+              ff2re2lzbypx3pt6huxv5itp6gygfdle._domainkey   IN CNAME   ff2re2lzbypx3pt6huxv5itp6gygfdle.dkim.amazonses.com.
+            '';
           };
         };
       };

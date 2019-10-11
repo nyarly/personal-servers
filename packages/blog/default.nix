@@ -21,7 +21,7 @@ in
       { private = true; owner = "nyarly"; repo = "blog"; }
     )
     else
-      ./.;
+      pkgs.nix-gitignore.gitignoreSource [] ./.;
 
     buildInputs = [
       rubyEnv

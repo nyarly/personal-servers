@@ -16,18 +16,27 @@ with lib;
               type = str;
               default = "localhost";
             };
+
             backendPort = mkOption {
               type = ints.between 1 65535;
             };
+
             staticBase = mkOption {
               type = path;
             };
+
             staticLocations = mkOption {
               type = listOf str;
             };
+
             acmeEnabled = mkOption {
               type = bool;
               default = true;
+            };
+
+            extraDNS = mkOption {
+              type = str;
+              default = "";
             };
           };
         });
@@ -100,7 +109,9 @@ with lib;
         ];
     in concatLists (mapAttrsToList nameToVHost config.appProxy.sites);
 
-    services.nsd.zones.staticweb.children = mapAttrs (name: value: {}) config.appProxy.sites;
+    services.nsd.zones.staticweb.children = mapAttrs (name: value: {
+      data = services.nsd.zones.staticweb.data + value.extraDNS;
+    }) config.appProxy.sites;
 
     security.acme.certs = let
       siteToCertCfg = domain: {...}:
