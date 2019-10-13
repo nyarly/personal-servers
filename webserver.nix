@@ -50,7 +50,43 @@ in
         masterKey = keys.wagthepig.text;
       };
       wrapQuotes = str: ''"${str}"'';
-      dnsLines = path: lib.strings.concatStringsSep "\n" (map wrapQuotes (lib.strings.splitString "\n" (builtins.readFile path)));
+      #dnsLines = path: lib.strings.concatStringsSep "\n" (map wrapQuotes (lib.strings.splitString "\n" (builtins.readFile path)));
+      baseDNSZone = ''
+        $TTL 18000  ; 5 hours
+        @ IN SOA  ns1.lrdesign.com. nyarly.gmail.com. (
+            2019101001 ; serial
+            10800      ; refresh (3 hours)
+            3600       ; retry (1 hour)
+            18000      ; expire (5 hours)
+            18000      ; minimum (5 hours)
+        )
+                       NS       ns1.lrdesign.com.
+                       NS       ns2.lrdesign.com.
+                       NS       ns3.lrdesign.com.
+                       NS       ns4.lrdesign.com.
+                       NS       ns5.lrdesign.com.
+
+                       A        ${pubIP}
+                       RP     @ nyarly.gmail.com.
+        blog           CNAME  @
+        gems           CNAME  @
+        repos          CNAME  @
+        www            CNAME  @
+        tasks          CNAME  @
+      '';
+      /*
+        @          IN  TXT    "v=spf1 +a +mx ip4:${pubIP} -all"
+        @          IN  TXT    "google-site-verification=PdMCpmcPxMhcuIeabkjGH2AcasilKqCatBs98MxkImk"
+        _domainkey IN  TXT    "o=-\;"
+        dkim._domainkey IN  TXT ("v=DKIM1\; t=y\; k=rsa\; p="
+          ${dnsLines secrets/dkim.cert.bare}
+          )
+        @          IN  TXT    "v=DMARC1;p=reject;sp=reject;ruf=mailto:nyarly@gmail.com"
+        _dmarc     IN  TXT    "v=DMARC1;p=reject;sp=reject;ruf=mailto:nyarly@gmail.com"
+      '';
+      */
+
+      sesConfig = import ./secrets/ses-creds.nix;
     in
     {
       imports = [
@@ -93,51 +129,13 @@ in
             pool = 5;
           };
 
-          secretKeyBase = "testsecret";
-        };
+          extraEnvironment = {
+            SMTP_HOST = "email-smtp.us-west-2.amazonaws.com";
+            SMTP_PORT = "587";
+            SMTP_USERNAME = sesConfig.user;
+            SMTP_PASSWORD = sesConfig.pass;
+          };
 
-        exim = {
-          enable = true;
-          config = ''
-            keep_environment = # suppress warning about purged environment
-            # use set_environment if there are vars we want
-
-            tls_advertise_hosts =
-            acl_smtp_rcpt = local_relay
-
-            disable_ipv6 = true
-
-            domainlist local_domains = <; 127.0.0.1 ; ::1 ; localhost
-            hostlist local_hosts = <; 127.0.0.1 ; ::1 ; localhost
-
-            trusted_users = wagthepig
-
-            begin acl
-            local_relay:
-              accept hosts = +local_hosts
-
-            begin routers
-            dnslookup:
-              driver = dnslookup
-              domains = ! +local_domains
-              transport = remote_smtp
-              ignore_target_hosts = <; 0.0.0.0 ; 127.0.0.0/8 ; ::1
-              no_more
-
-            begin transports
-            remote_smtp:
-              driver = smtp
-              hosts_try_prdr = *
-              dkim_domain = ''${lc:''${domain:''$h_from:}}
-              dkim_selector = dkim
-              dkim_private_key = /var/spool/exim/dkim.key
-              dkim_strict = true
-              dkim_timestamps = 1209600
-
-            begin retry
-              *   *   F,2h,15m; G,16h,1h,1.5; F,4d,6h
-
-          '';
         };
 
         fail2ban = {
@@ -183,40 +181,7 @@ in
               notify = buddyNSServers;
               # rrlWhitelist = ["all"];
 
-              data = ''
-                $TTL 18000  ; 5 hours
-                @ IN SOA  ns1.lrdesign.com. nyarly.gmail.com. (
-                    2019052003 ; serial
-                    10800      ; refresh (3 hours)
-                    3600       ; retry (1 hour)
-                    18000      ; expire (5 hours)
-                    18000      ; minimum (5 hours)
-                )
-                               NS       ns1.lrdesign.com.
-                               NS       ns2.lrdesign.com.
-                               NS       ns3.lrdesign.com.
-                               NS       ns4.lrdesign.com.
-                               NS       ns5.lrdesign.com.
-
-                               A        ${pubIP}
-                               RP     @ nyarly.gmail.com.
-                blog           CNAME  @
-                gems           CNAME  @
-                repos          CNAME  @
-                www            CNAME  @
-                tasks          CNAME  @
-              '';
-              /*
-                @          IN  TXT    "v=spf1 +a +mx ip4:${pubIP} -all"
-                @          IN  TXT    "google-site-verification=PdMCpmcPxMhcuIeabkjGH2AcasilKqCatBs98MxkImk"
-                _domainkey IN  TXT    "o=-\;"
-                dkim._domainkey IN  TXT ("v=DKIM1\; t=y\; k=rsa\; p="
-                  ${dnsLines secrets/dkim.cert.bare}
-                  )
-                @          IN  TXT    "v=DMARC1;p=reject;sp=reject;ruf=mailto:nyarly@gmail.com"
-                _dmarc     IN  TXT    "v=DMARC1;p=reject;sp=reject;ruf=mailto:nyarly@gmail.com"
-              '';
-              */
+              data = baseDNSZone;
             };
           };
 
@@ -253,7 +218,7 @@ in
             backendPort = ports.wagthepig;
             staticBase = wagthepig + "/share/wagthepig/public";
             staticLocations = [ "assets" "system" ];
-            extraDNS = ''
+            zoneData = baseDNSZone + ''
               @                                             IN MX      10 inbound-smtp.us-west-2.amazonaws.com.
               _amazonses                                    IN TXT     OcC8Uz9saTf9WWsl7sFFkx4LKPe33jP7GBBBQ4y1k6E=
               2j6jkg6lfr5tuqofswar3xi4o7ey3243._domainkey   IN CNAME   2j6jkg6lfr5tuqofswar3xi4o7ey3243.dkim.amazonses.com.
@@ -269,8 +234,6 @@ in
       };
 
       users.users = {
-        wagthepig.extraGroups = [ "exim" ];
-
         root.openssh.authorizedKeys.keyFiles = [
           ssh-keys/root-1.pub
           ssh-keys/root-2.pub

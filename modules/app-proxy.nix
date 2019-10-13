@@ -34,9 +34,9 @@ with lib;
               default = true;
             };
 
-            extraDNS = mkOption {
-              type = str;
-              default = "";
+            zoneData = mkOption {
+              type = nullOr str;
+              default = null;
             };
           };
         });
@@ -109,9 +109,12 @@ with lib;
         ];
     in concatLists (mapAttrsToList nameToVHost config.appProxy.sites);
 
-    services.nsd.zones.staticweb.children = mapAttrs (name: value: {
-      data = services.nsd.zones.staticweb.data + value.extraDNS;
-    }) config.appProxy.sites;
+    services.nsd.zones.staticweb.children = mapAttrs (name: value:
+    if value.zoneData == null then
+      { }
+    else
+      { data = value.zoneData; }
+    ) config.appProxy.sites;
 
     security.acme.certs = let
       siteToCertCfg = domain: {...}:

@@ -73,7 +73,7 @@ in
 
           #documentRoot = staticBase;
           enableSSL = true;
-          sslServerCert = "/var/lib/acme/${tscfg.fqdn}/full.pem";
+          sslServerCert = "/var/lib/acme/${tscfg.fqdn}/cert.pem";
           sslServerKey = "/var/lib/acme/${tscfg.fqdn}/key.pem";
 
           extraConfig = ''
