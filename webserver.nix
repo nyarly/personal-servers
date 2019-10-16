@@ -54,7 +54,7 @@ in
       baseDNSZone = ''
         $TTL 18000  ; 5 hours
         @ IN SOA  ns1.lrdesign.com. nyarly.gmail.com. (
-            2019101001 ; serial
+            2019101501 ; serial
             10800      ; refresh (3 hours)
             3600       ; retry (1 hour)
             18000      ; expire (5 hours)
@@ -223,6 +223,7 @@ in
               _amazonses                                    IN TXT     OcC8Uz9saTf9WWsl7sFFkx4LKPe33jP7GBBBQ4y1k6E=
               2j6jkg6lfr5tuqofswar3xi4o7ey3243._domainkey   IN CNAME   2j6jkg6lfr5tuqofswar3xi4o7ey3243.dkim.amazonses.com.
               ff2re2lzbypx3pt6huxv5itp6gygfdle._domainkey   IN CNAME   ff2re2lzbypx3pt6huxv5itp6gygfdle.dkim.amazonses.com.
+              536itjwezvjiglhoj6balblsrvovp2i2._domainkey   IN CNAME   536itjwezvjiglhoj6balblsrvovp2i2.dkim.amazonses.com.
             '';
           };
         };
