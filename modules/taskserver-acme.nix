@@ -3,6 +3,9 @@ with lib;
 let
   cfg = config.services.taskserverAcme;
   tscfg = config.services.taskserver;
+  user = "taskd";
+  group = "taskd";
+  dataDir = "/var/lib/taskserver";
 in
   {
     options = with types;
@@ -19,71 +22,52 @@ in
                 <olink targetdoc="manual" targetptr="module-taskserver"/>.
           '';
         };
-
-        acmeRoot = mkOption {
-          type = path;
-          description = "The path that ACME clients will use for challenges.";
-        };
-
-        email = mkOption {
-          type = string;
-          description = "The administrator's email (sent to LetEncrypt)";
-        };
       };
     };
 
     config = (mkIf cfg.enable ( let
         acmeTargetPath = "${cfg.acmeRoot}/${tscfg.fqdn}";
-      in
+        keyFile = op: server: {
+          deployment.keys."taskserver-${server}" = {
+            inherit user group;
+            permissions = "0600"; # the default
+            text = builtins.readFile op;
+          };
+
+          systemd.services.taskserver-keys = {
+            wants = [ "taskserver-${server}.service" ];
+            after = [ "taskserver-${server}.service" ];
+          };
+
+        };
+      in mkMerge [
       {
         services.taskserver = {
+          inherit user group dataDir;
           enable = true;
           pki.auto = {};
           pki.manual = {
-            ca.cert = "/var/lib/acme/${tscfg.fqdn}/chain.pem";
-            server.crl = "/var/lib/acme/${tscfg.fqdn}/server.crl";
-
-            server.cert = "/var/lib/acme/${tscfg.fqdn}/cert.pem";
-
-            server.key = "/var/lib/acme/${tscfg.fqdn}/key.pem";
+            ca.cert     = "${dataDir}/keys/taskserver-ca.pem";
+            server.cert = "${dataDir}/keys/taskserver-cert.pem";
+            server.key  = "${dataDir}/keys/taskserver-key.pem";
           };
         };
 
-        security.acme.certs.${tscfg.fqdn} = {
-          webroot = acmeTargetPath;
-          email = cfg.email;
-          user = "taskd";
-          group = "taskd";
-          allowKeysForGroup = true;
-          plugins = ["cert.pem" "key.pem" "chain.pem" "account_key.json"];
-          postRun = "systemctl reload taskserver.service";
+        systemd.services.taskserver-keys = {
+          script = ''
+            install -m 0600 -o ${user} -g ${group} /run/keys/taskserver-* ${dataDir}/keys/
+          '';
         };
 
-        services.httpd.virtualHosts = [{
-          hostName = tscfg.fqdn;
-          listen = [{ port = 80; }];
+        systemd.services.taskserver-init = {
+          wants = [ "taskserver-keys.service" ];
+          after = [ "taskserver-keys.service" ];
+        };
+      }
+      (keyFile ../certs/root-cert.pem "ca.pem")
+      (keyFile ../certs/tasks.madhelm.net_cert.pem "cert.pem")
+      (keyFile ../secrets/tasks.madhelm.net_key.pem "key.pem")
 
-          #documentRoot = staticBase;
-          extraConfig = "Redirect / https://${tscfg.fqdn}/";
-        }
 
-        {
-          hostName = tscfg.fqdn;
-          listen = [{ port = 443; }];
-
-          #documentRoot = staticBase;
-          enableSSL = true;
-          sslServerCert = "/var/lib/acme/${tscfg.fqdn}/cert.pem";
-          sslServerKey = "/var/lib/acme/${tscfg.fqdn}/key.pem";
-
-          extraConfig = ''
-          RequestHeader set X-Forwarded-Proto "https"
-          Alias "/.well-known/acme-challenge" "${acmeTargetPath}/.well-known/acme-challenge"
-          <Directory ${acmeTargetPath}>
-          Require all granted
-          </Directory>
-          '';
-        }];
-      })
-    );
+      ]));
   }

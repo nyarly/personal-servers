@@ -197,9 +197,7 @@ in
         };
 
         taskserverAcme = {
-          inherit acmeRoot;
           enable = true;
-          email = "nyarly@gmail.com";
         };
       };
 
