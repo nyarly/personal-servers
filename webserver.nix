@@ -43,10 +43,10 @@ in
 
     webserver = { lib, config, pkgs, ... }:
     let
-      keys = import ./secrets/webserver-keys.nix;
+      keys = import secrets/webserver-keys.nix;
       pubIP = config.networking.publicIPv4;
-      blog = pkgs.callPackage ./packages/blog/default.nix {};
-      wagthepig = pkgs.callPackage ./packages/wagthepig/default.nix {
+      blog = pkgs.callPackage packages/blog/default.nix {};
+      wagthepig = pkgs.callPackage packages/wagthepig/default.nix {
         masterKey = keys.wagthepig.text;
       };
       wrapQuotes = str: ''"${str}"'';
@@ -86,14 +86,14 @@ in
       '';
       */
 
-      sesConfig = import ./secrets/ses-creds.nix;
+      sesConfig = import secrets/ses-creds.nix;
     in
     {
       imports = [
-        ./modules/static-site.nix
-        ./modules/app-proxy.nix
-        ./modules/rails-app.nix
-        ./modules/taskserver-acme.nix
+        modules/static-site.nix
+        modules/app-proxy.nix
+        modules/rails-app.nix
+        modules/taskserver-acme.nix
       ];
 
       environment.systemPackages = with pkgs; [ neovim fish ];
@@ -198,6 +198,32 @@ in
 
         taskserverAcme = {
           enable = true;
+        };
+
+        znc = {
+          openFirewall = true;
+          mutable = false;
+          enable = true;
+          useLegacyConfig = false;
+          modulePackages = with pkgs.zncModules; [ backlog ];
+          config = {
+            LoadModule = [ "backlog" ];
+            User.judson = {
+              Admin = true;
+              Nick = "judson";
+              AltNick = "judson_";
+              #LoadModule = [ "chansaver" "controlpanel" ];
+              Network.freenode = {
+                Server = "chat.freenode.net +6697";
+                #LoadModule = [ "simple_away" ];
+                LoadModule = [ "sasl" ];
+                Chan = {
+                  "#nixos" = { Detached = false; };
+                };
+              };
+              Pass.password = import secrets/znc-pass.nix;
+            };
+          };
         };
       };
 

@@ -16,8 +16,7 @@ let
           serveSSH.name
           serveDNS.name
           serveHTTP.name
-          serveHTTPS.name
-          serveTaskd.name
+          serveMisc.name
         ];
         blockDeviceMapping = {
           "/dev/xvdf" = {
@@ -79,21 +78,22 @@ in
             sourceIp = "0.0.0.0/0";
             fromPort = 0;
             toPort = 80;
-          }];
-        };
-
-        serveHTTPS = {...}: {
-          inherit region accessKeyId;
-          rules = [{
+          }
+          {
             sourceIp = "0.0.0.0/0";
             fromPort = 0;
             toPort = 443;
           }];
         };
 
-        serveTaskd = {...}: {
+        serveMisc = {...}: {
           inherit region accessKeyId;
           rules = [{
+            sourceIp = "0.0.0.0/0";
+            fromPort = 0;
+            toPort = 5000;
+          }
+          {
             sourceIp = "0.0.0.0/0";
             fromPort = 0;
             toPort = 53589;
