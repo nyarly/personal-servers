@@ -181,10 +181,10 @@
   mysql2 = {
     source = {
       remotes = ["https://rubygems.org"];
-      sha256 = "1kh96xp396swyaddz5l2zqjxi3cvyqv62scak9b3f98j14ynfscl";
+      sha256 = "sha256-AbuVo+oYzerm3M3VPCm0yXqHPDvOHTW1JAVd8io4Xnc=";
       type = "gem";
     };
-    version = "0.4.5";
+    version = "0.5.4";
   };
   pathutil = {
     dependencies = ["forwardable-extended"];

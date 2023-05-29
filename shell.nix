@@ -1,5 +1,2 @@
-{ pkgs ? import <nixpkgs> {} }:
-with pkgs;
-mkShell {
-  buildInputs = [ nixops git-crypt ];
-}
+{ system ? builtins.currentSystem }:
+(builtins.getFlake (toString ./.)).devShell.${system}

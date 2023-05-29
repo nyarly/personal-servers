@@ -60,11 +60,11 @@ in
             18000      ; expire (5 hours)
             18000      ; minimum (5 hours)
         )
-                       NS       ns1.lrdesign.com.
-                       NS       ns2.lrdesign.com.
-                       NS       ns3.lrdesign.com.
-                       NS       ns4.lrdesign.com.
-                       NS       ns5.lrdesign.com.
+                       NS uz5dkwpjfvfwb9rh1qj93mtup0gw65s6j7vqqumch0r9gzlu8qxx39.pro.ns.buddyns.com.
+                       NS uz5qfm8n244kn4qz8mh437w9kzvpudduwyldp5361v9n0vh8sx5ucu.pro.ns.buddyns.com.
+                       NS uz588h0rhwuu3cc03gm9uckw0w42cqr459wn1nxrbzhym2wd81zydb.pro.ns.buddyns.com.
+                       NS uz53c7fwlc89h7jrbxcsnxfwjw8k6jtg56l4yvhm6p2xf496c0xl40.pro.ns.buddyns.com.
+                       NS uz56xw8h7fw656bpfv84pctjbl9rbzbqrw4rpzdhtvzyltpjdmx0zq.pro.ns.buddyns.com.
 
                        A        ${pubIP}
                        RP     @ nyarly.gmail.com.

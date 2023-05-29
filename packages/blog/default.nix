@@ -1,6 +1,6 @@
 { pkgs ? import <nixpkgs> {} }:
 let
-  inherit (pkgs) lib stdenv ruby bundler bundlerEnv fetchFromGitHub;
+  inherit (pkgs) lib stdenv ruby bundler bundlerEnv;
 
   rubyEnv = bundlerEnv {
     inherit ruby;
@@ -12,18 +12,22 @@ let
     gemset = ./gemset.nix;
   };
 in
-  stdenv.mkDerivation {
+  with builtins; stdenv.mkDerivation {
     name = "blog-jdl";
 
-    src = if builtins.pathExists(./source.json) then
-    fetchFromGitHub (
-      builtins.fromJSON (builtins.readFile ./source.json) //
-      { private = true; owner = "nyarly"; repo = "blog"; }
+    src = if pathExists(./source.json) then
+    fetchGit (
+      fromJSON (readFile ./source.json) //
+      {
+        url = "git@github.com:nyarly/blog.git";
+      }
     )
     else
       pkgs.nix-gitignore.gitignoreSource [] ./.;
 
     buildInputs = [
+      pkgs.bundix
+      pkgs.nix-prefetch-git
       rubyEnv
     ];
 
