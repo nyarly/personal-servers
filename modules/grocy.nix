@@ -21,7 +21,7 @@ in {
         "pm" = "dynamic";
         "php_admin_value[error_log]" = "stderr";
         "php_admin_flag[log_errors]" = true;
-        "listen.owner" = "nginx";
+        "listen.owner" = "wwwrun";
         "catch_workers_output" = true;
         "pm.max_children" = "32";
         "pm.start_servers" = "2";
@@ -95,16 +95,16 @@ in {
       isSystemUser = true;
       createHome = true;
       home = cfg.dataDir;
-      group = "nginx";
+      group = "wwwrun";
     };
 
     systemd.tmpfiles.rules = map (
-      dirName: "d '${cfg.dataDir}/${dirName}' - grocy nginx - -"
+      dirName: "d '${cfg.dataDir}/${dirName}' - grocy wwwrun - -"
     ) [ "viewcache" "plugins" "settingoverrides" "storage" ];
 
     services.phpfpm.pools.grocy = {
       user = "grocy";
-      group = "nginx";
+      group = "wwwrun";
 
       # PHP 8.0 is the only version which is supported/tested by upstream:
       # https://github.com/grocy/grocy/blob/v3.3.0/README.md#how-to-install
@@ -126,7 +126,16 @@ in {
       extraModules = [ "proxy_fcgi" ];
 
       virtualHosts = {
-        "groceries.madhelm.net" = {
+          "groceries.madhelm.net" = let
+            staticLocations = [];
+
+            excludedLocations = map (loc: ''
+            <Location /${loc}>
+            ProxyPass !
+            </Location>
+            '') (staticLocations ++ [ ".well-known/acme-challenge" ]);
+
+          in{
           hostName = "groceries.madhelm.net";
 
           documentRoot = "${pkgs.grocy}/public";
@@ -144,8 +153,9 @@ in {
           };
 
           extraConfig = ''
-
-          ProxyPassMatch ^/(.*\.php(/.*)?)$ unix:${config.services.phpfpm.pools.grocy.socket}
+          ProxyPassMatch ^/(.*\.php(/.*)?)$ "unix:${config.services.phpfpm.pools.grocy.socket}|fcgi://localhost/${pkgs.grocy}/public/"
+          ${toString excludedLocations}
+          DirectoryIndex /index.php index.php
           '';
         };
       };

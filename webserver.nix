@@ -112,9 +112,14 @@ in
         };
       };
 
+      security.acme = {
+        email = "nyarly@gmail.com";
+        acceptTerms = true;
+      };
+
       services = {
         grocy = {
-          enable = false;
+          enable = true;
           hostName = "groceries.madhelm.net";
           # calendar.firstDayOfWeek = 0; # Sunday
         };

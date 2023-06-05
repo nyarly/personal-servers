@@ -57,6 +57,7 @@ with lib;
 
   config = mkIf (builtins.length (builtins.attrNames config.appProxy.sites) > 0) {
     services.httpd.virtualHosts = let
+      vhosts = (mapAttrs' httpVHost config.appProxy.sites) // (mapAttrs' httpsVHost config.appProxy.sites);
       httpVHost = name: hcfg: nameValuePair "${name}-http" {
           hostName = name;
           serverAliases = [ "www.${name}" ];
@@ -66,70 +67,40 @@ with lib;
           extraConfig = "Redirect / https://${name}/";
         };
 
-      httpsVHost = name: hcfg: let
+        httpsVHost = name: hcfg: nameValuePair "${name}-https" (let
           inherit (hcfg) staticBase;
-          acmeConfig = if hcfg.acmeEnabled then ''
-            <Location /.well-known/acme-challenge>
-              ProxyPass !
-            </Location>
-            Alias "/.well-known/acme-challenge" "${config.appProxy.acmeRoot}/${name}/.well-known/acme-challenge"
-            <Directory ${config.appProxy.acmeRoot}/${name}>
-              Require all granted
-            </Directory>
-          '' else "";
 
           excludedLocations = map (loc: ''
-            <Location /${loc}>
-              ProxyPass !
-            </Location>
-          '') hcfg.staticLocations;
+          <Location /${loc}>
+            ProxyPass !
+          </Location>
+          '') (hcfg.staticLocations ++ [ ".well-known/acme-challenge" ]);
 
           backend = "${hcfg.backendHost}:${toString hcfg.backendPort}";
-      in nameValuePair "${name}-https" {
-            hostName = name;
-            serverAliases = [ "www.${name}" ];
+        in {
+          hostName = name;
+          serverAliases = [ "www.${name}" ];
 
-            documentRoot = staticBase;
+          documentRoot = staticBase;
 
-            onlySSL = true;
+          onlySSL = true;
+          enableACME = true;
 
-            sslServerCert = "/var/lib/acme/${name}/full.pem";
-            sslServerKey = "/var/lib/acme/${name}/key.pem";
+          extraConfig = ''
+          RequestHeader set X-Forwarded-Proto "https"
+          ProxyPass / http://${backend}/
+          ProxyPassReverse / http://${backend}/
+          ${toString excludedLocations}
+          '';
+        });
+    in vhosts;
 
-            extraConfig = ''
-              RequestHeader set X-Forwarded-Proto "https"
-              ProxyPass / http://${backend}/
-              ProxyPassReverse / http://${backend}/
-              ${toString excludedLocations}
-              ${acmeConfig}
-            '';
-          };
-    in (mapAttrs' httpVHost config.appProxy.sites) // (mapAttrs' httpsVHost config.appProxy.sites);
 
     services.nsd.zones.staticweb.children = mapAttrs (name: value:
-    if value.zoneData == null then
-      { }
-    else
-      { data = value.zoneData; }
-    ) config.appProxy.sites;
-
-    security.acme = {
-      acceptTerms = true;
-      email = "nyarly@gmail.com";
-      certs = let
-        certs = mapAttrs siteToCertCfg config.appProxy.sites;
-        siteToCertCfg = domain: {...}: {
-          webroot = config.appProxy.acmeRoot + "/${domain}";
-          email = "nyarly@gmail.com";
-          postRun = "systemctl reload httpd.service";
-          extraDomainNames = [ "www.${domain}" ];
-        };
-      in certs;
-    };
-
-    systemd.services.httpd = {
-      after = [ "acme-selfsigned-certificates.target" ];
-      wants = [ "acme-selfsigned-certificates.target" "acme-certificates.target" ];
-    };
+      if value.zoneData == null then
+        { }
+      else
+        { data = value.zoneData; }
+      ) config.appProxy.sites;
   };
 }
