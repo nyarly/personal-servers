@@ -3,9 +3,6 @@ GEM
   specs:
     addressable (2.6.0)
       public_suffix (>= 2.0.2, < 4.0)
-    bundler-audit (0.6.0)
-      bundler (~> 1.2)
-      thor (~> 0.18)
     colorator (1.1.0)
     concurrent-ruby (1.1.5)
     em-websocket (0.5.1)
@@ -60,15 +57,13 @@ GEM
     sass-listen (4.0.0)
       rb-fsevent (~> 0.9, >= 0.9.4)
       rb-inotify (~> 0.9, >= 0.9.7)
-    sequel (4.39.0)
-    thor (0.20.0)
+    sequel (5.69.0)
     unidecode (1.0.0)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler-audit
   htmlentities
   jekyll (~> 3.7)
   jekyll-compose
@@ -78,4 +73,4 @@ DEPENDENCIES
   unidecode
 
 BUNDLED WITH
-   1.16.3
+   2.1.4

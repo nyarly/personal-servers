@@ -57,8 +57,16 @@ with lib;
 
   config = mkIf (builtins.length (builtins.attrNames config.appProxy.sites) > 0) {
     services.httpd.virtualHosts = let
-      nameToVHost = name: hcfg:
-        let
+      httpVHost = name: hcfg: nameValuePair "${name}-http" {
+          hostName = name;
+          serverAliases = [ "www.${name}" ];
+          listen = [{ port = 80; }];
+
+          documentRoot = hcfg.staticBase;
+          extraConfig = "Redirect / https://${name}/";
+        };
+
+      httpsVHost = name: hcfg: let
           inherit (hcfg) staticBase;
           acmeConfig = if hcfg.acmeEnabled then ''
             <Location /.well-known/acme-challenge>
@@ -77,24 +85,14 @@ with lib;
           '') hcfg.staticLocations;
 
           backend = "${hcfg.backendHost}:${toString hcfg.backendPort}";
-        in
-        [
-          {
+      in nameValuePair "${name}-https" {
             hostName = name;
             serverAliases = [ "www.${name}" ];
-            listen = [{ port = 80; }];
 
             documentRoot = staticBase;
-            extraConfig = "Redirect / https://${name}/";
-          }
 
-          {
-            hostName = name;
-            serverAliases = [ "www.${name}" ];
-            listen = [{ port = 443; }];
+            onlySSL = true;
 
-            documentRoot = staticBase;
-            enableSSL = true;
             sslServerCert = "/var/lib/acme/${name}/full.pem";
             sslServerKey = "/var/lib/acme/${name}/key.pem";
 
@@ -105,9 +103,8 @@ with lib;
               ${toString excludedLocations}
               ${acmeConfig}
             '';
-          }
-        ];
-    in concatLists (mapAttrsToList nameToVHost config.appProxy.sites);
+          };
+    in (mapAttrs' httpVHost config.appProxy.sites) // (mapAttrs' httpsVHost config.appProxy.sites);
 
     services.nsd.zones.staticweb.children = mapAttrs (name: value:
     if value.zoneData == null then
@@ -116,20 +113,19 @@ with lib;
       { data = value.zoneData; }
     ) config.appProxy.sites;
 
-    security.acme.certs = let
-      siteToCertCfg = domain: {...}:
-      let
-        cfg = {
-            webroot = config.appProxy.acmeRoot + "/${domain}";
-            email = "nyarly@gmail.com";
-            postRun = "systemctl reload httpd.service";
-          };
-        in [ {
-          name = domain;
-          value = cfg;
-          extraDomains = { "www.${domain}" = null; };
-        } ];
-    in listToAttrs (concatLists (mapAttrsToList siteToCertCfg config.appProxy.sites));
+    security.acme = {
+      acceptTerms = true;
+      email = "nyarly@gmail.com";
+      certs = let
+        certs = mapAttrs siteToCertCfg config.appProxy.sites;
+        siteToCertCfg = domain: {...}: {
+          webroot = config.appProxy.acmeRoot + "/${domain}";
+          email = "nyarly@gmail.com";
+          postRun = "systemctl reload httpd.service";
+          extraDomainNames = [ "www.${domain}" ];
+        };
+      in certs;
+    };
 
     systemd.services.httpd = {
       after = [ "acme-selfsigned-certificates.target" ];

@@ -10,15 +10,6 @@
     };
     version = "2.6.0";
   };
-  bundler-audit = {
-    dependencies = ["thor"];
-    source = {
-      remotes = ["https://rubygems.org"];
-      sha256 = "1b884xja6q87siscsx34z2ky3h7npd334pprfy13ns60fax8pn52";
-      type = "gem";
-    };
-    version = "0.6.0";
-  };
   colorator = {
     source = {
       remotes = ["https://rubygems.org"];
@@ -285,20 +276,14 @@
     version = "4.0.0";
   };
   sequel = {
+    groups = ["default"];
+    platforms = [];
     source = {
       remotes = ["https://rubygems.org"];
-      sha256 = "01zqd6mi9wvhbg76b91k35jppha0c944ar9f816gi400cf9817bg";
+      sha256 = "1brf6h0kg5ssl1sb99gv41y8lk814jqa3nzakb79ywlhyzbn1513";
       type = "gem";
     };
-    version = "4.39.0";
-  };
-  thor = {
-    source = {
-      remotes = ["https://rubygems.org"];
-      sha256 = "0nmqpyj642sk4g16nkbq6pj856adpv91lp4krwhqkh2iw63aszdl";
-      type = "gem";
-    };
-    version = "0.20.0";
+    version = "5.69.0";
   };
   unidecode = {
     source = {

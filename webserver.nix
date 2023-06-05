@@ -1,5 +1,5 @@
 let
-  acmeRoot = "/var/run/acme-challenges";
+  acmeRoot = "/var/lib/acme";
 
   ports = {
     wagthepig = 3000;
@@ -73,6 +73,7 @@ in
         repos          CNAME  @
         www            CNAME  @
         tasks          CNAME  @
+        groceries          CNAME  @
       '';
       /*
         @          IN  TXT    "v=spf1 +a +mx ip4:${pubIP} -all"
@@ -89,11 +90,13 @@ in
       sesConfig = import secrets/ses-creds.nix;
     in
     {
+      disabledModules = [ "services/web-apps/grocy.nix" ];
       imports = [
         modules/static-site.nix
         modules/app-proxy.nix
         modules/rails-app.nix
         modules/taskserver-acme.nix
+        modules/grocy.nix
       ];
 
       environment.systemPackages = with pkgs; [ neovim fish ];
@@ -110,6 +113,12 @@ in
       };
 
       services = {
+        grocy = {
+          enable = false;
+          hostName = "groceries.madhelm.net";
+          # calendar.firstDayOfWeek = 0; # Sunday
+        };
+
         wagthepig = {
           enable = true;
           package = wagthepig;

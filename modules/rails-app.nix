@@ -163,67 +163,69 @@ with lib;
         else "echo Don't know how to set up user for database adapter: ${db.adapter}";
 
   in
-    {
+  {
+    users = {
       users = {
-        users = [
-          { name = cfg.user;
-            group = cfg.group;
-            extraGroups = [ "keys" ];
-            home = "${cfg.statePath}";
-          }
-        ];
-
-        groups = [ { name = cfg.group; } ];
-      };
-
-      systemd.services.wagthepig = {
-        after = [ "network.target" "wagthepig-key.service"];
-        wants = [ "wagthepig-key.service" ];
-        wantedBy = [ "multi-user.target" ];
-        environment = appEnv;
-
-        path = [ pkgs.nodejs ];
-
-        preStart = ''
-          mkdir -p $BOOTSNAP_CACHE_DIR
-          mkdir -p ${cfg.statePath}/system/attachments
-          mkdir -p ${cfg.statePath}/log
-          chown ${cfg.user}:${cfg.group} -R ${cfg.statePath}
-
-          mkdir ${package.runDir} -p
-          ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} ${package.runDir}/database.yml
-          ln -sf ${cfg.statePath}/system ${package.runDir}/system
-          ln -sf ${cfg.statePath}/log ${package.runDir}/log
-
-          ${createDBuser config}
-
-          export RAILS_MASTER_KEY=$(cat /run/keys/wagthepig)
-          if ! test -e "${cfg.statePath}/db-setup-done"; then
-            ${package.env}/bin/rake db:setup
-            touch ${cfg.statePath}/db-setup-done
-          else
-            ${package.env}/bin/rake db:migrate
-          fi
-        '';
-
-        script = ''
-          id
-          export RAILS_MASTER_KEY=$(cat /run/keys/wagthepig)
-          ${package.env}/bin/rails server --binding=${cfg.listenAddress} --port=${toString cfg.listenPort}
-        '';
-
-        serviceConfig = {
-          PermissionsStartOnly = true;
-          PrivateTmp = true;
-          PrivateDevices = true;
-          Type = "simple";
-          User = cfg.user;
-          Group = cfg.group;
-          TimeoutSec = "300s";
-          Restart = "on-failure";
-          RestartSec = "10s";
-          WorkingDirectory = "${package}/share/wagthepig";
+        "${cfg.user}" = {
+          name = cfg.user;
+          group = cfg.group;
+          extraGroups = [ "keys" ];
+          home = "${cfg.statePath}";
+          isSystemUser = true;
         };
       };
-    });
+
+      groups = { "${cfg.group}" = {}; };
+    };
+
+    systemd.services.wagthepig = {
+      after = [ "network.target" "wagthepig-key.service"];
+      wants = [ "wagthepig-key.service" ];
+      wantedBy = [ "multi-user.target" ];
+      environment = appEnv;
+
+      path = [ pkgs.nodejs ];
+
+      preStart = ''
+      mkdir -p $BOOTSNAP_CACHE_DIR
+      mkdir -p ${cfg.statePath}/system/attachments
+      mkdir -p ${cfg.statePath}/log
+      chown ${cfg.user}:${cfg.group} -R ${cfg.statePath}
+
+      mkdir ${package.runDir} -p
+      ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} ${package.runDir}/database.yml
+      ln -sf ${cfg.statePath}/system ${package.runDir}/system
+      ln -sf ${cfg.statePath}/log ${package.runDir}/log
+
+      ${createDBuser config}
+
+      export RAILS_MASTER_KEY=$(cat /run/keys/wagthepig)
+      if ! test -e "${cfg.statePath}/db-setup-done"; then
+      ${package.env}/bin/rake db:setup
+      touch ${cfg.statePath}/db-setup-done
+      else
+      ${package.env}/bin/rake db:migrate
+      fi
+      '';
+
+      script = ''
+      id
+      export RAILS_MASTER_KEY=$(cat /run/keys/wagthepig)
+      ${package.env}/bin/rails server --binding=${cfg.listenAddress} --port=${toString cfg.listenPort}
+      '';
+
+      serviceConfig = {
+        PermissionsStartOnly = true;
+        PrivateTmp = true;
+        PrivateDevices = true;
+        Type = "simple";
+        User = cfg.user;
+        Group = cfg.group;
+        TimeoutSec = "300s";
+        Restart = "on-failure";
+        RestartSec = "10s";
+        WorkingDirectory = "${package}/share/wagthepig";
+      };
+    };
+  });
 }

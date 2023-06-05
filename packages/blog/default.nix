@@ -1,6 +1,9 @@
-{ pkgs ? import <nixpkgs> {} }:
 let
-  inherit (pkgs) lib stdenv ruby bundler bundlerEnv;
+  pinned = import ./pinned.nix;
+in
+  { pkgs ? pinned }:
+let
+  inherit (pkgs) lib stdenv ruby bundler bundlerEnv fetchFromGitHub;
 
   rubyEnv = bundlerEnv {
     inherit ruby;
@@ -12,22 +15,28 @@ let
     gemset = ./gemset.nix;
   };
 in
-  with builtins; stdenv.mkDerivation {
+  stdenv.mkDerivation {
     name = "blog-jdl";
 
-    src = if pathExists(./source.json) then
-    fetchGit (
-      fromJSON (readFile ./source.json) //
+    src = if builtins.pathExists(./source.json) then
+    builtins.fetchGit (
+      let
+        source = builtins.fromJSON (builtins.readFile ./source.json);
+      in
       {
         url = "git@github.com:nyarly/blog.git";
+        inherit (source) rev;
       }
     )
     else
-      pkgs.nix-gitignore.gitignoreSource [] ./.;
+      pkgs.nix-gitignore.gitignoreSource ["_drafts/"] ./.;
 
-    buildInputs = [
-      pkgs.bundix
-      pkgs.nix-prefetch-git
+    buildInputs = with pkgs; [
+      libmysqlclient
+      mysql
+      bundler
+      bundix
+      nix-prefetch-git
       rubyEnv
     ];
 

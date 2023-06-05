@@ -12,6 +12,7 @@
       buildInputs = with pkgs; [
         nixops
         git-crypt
+        nix-prefetch-git
       ];
     };
   });

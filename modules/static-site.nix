@@ -30,63 +30,54 @@ with lib;
 
   config = mkIf (builtins.length (builtins.attrNames config.staticWeb.sites) > 0) {
     services.httpd.virtualHosts = let
-      vhosts =  concatLists (mapAttrsToList nameToVHost config.staticWeb.sites);
-      nameToVHost = name: hcfg:
-      let
-        inherit (hcfg) docRoot;
-      in
-      [
-        {
+      vhosts = httpVhosts // httpsVhosts;
+      httpVhosts = mapAttrs' httpVhost config.staticWeb.sites;
+      httpsVhosts = mapAttrs' httpsVhost config.staticWeb.sites;
+
+      httpVhost = name: hcfg: nameValuePair "${name}-http" {
           hostName = name;
           serverAliases = [ "www.${name}" ];
           listen = [{ port = 80; }];
 
-          documentRoot = docRoot;
+          documentRoot = hcfg.docRoot;
           extraConfig = ''
-                Redirect / https://${name}/
-                Alias "/.well-known/acme-challenge" "${config.staticWeb.acmeRoot}/${name}/.well-known/acme-challenge"
-                <Directory ${config.staticWeb.acmeRoot}/${name}>
-                  Require all granted
-                </Directory>
+          Redirect / https://${name}/
+          Alias "/.well-known/acme-challenge" "${config.staticWeb.acmeRoot}/${name}/.well-known/acme-challenge"
+          <Directory ${config.staticWeb.acmeRoot}/${name}>
+          Require all granted
+          </Directory>
           '';
-        }
-
-        {
+        };
+      httpsVhost = name: hcfg: nameValuePair "${name}-https" {
           hostName = name;
           serverAliases = [ "www.${name}" ];
-          listen = [{ port = 443; }];
 
-          documentRoot = docRoot;
-          enableSSL = true;
+          documentRoot = hcfg.docRoot;
+
+          onlySSL = true;
+
           sslServerCert = "/var/lib/acme/${name}/full.pem";
           sslServerKey = "/var/lib/acme/${name}/key.pem";
 
           extraConfig = ''
-                Alias "/.well-known/acme-challenge" "${config.staticWeb.acmeRoot}/${name}/.well-known/acme-challenge"
-                <Directory ${config.staticWeb.acmeRoot}/${name}>
-                  Require all granted
-                </Directory>
+          Alias "/.well-known/acme-challenge" "${config.staticWeb.acmeRoot}/${name}/.well-known/acme-challenge"
+          <Directory ${config.staticWeb.acmeRoot}/${name}>
+          Require all granted
+          </Directory>
           '';
-        }
-      ];
+        };
     in vhosts;
 
     services.nsd.zones.staticweb.children = mapAttrs (name: value: {}) config.staticWeb.sites;
 
     security.acme.certs = let
-      certs = listToAttrs (concatLists (mapAttrsToList siteToCertCfg config.staticWeb.sites));
-      siteToCertCfg = domain: {...}:
-      let
-        cfg = {
-            webroot = config.staticWeb.acmeRoot + "/${domain}";
-            email = "nyarly@gmail.com";
-            postRun = "systemctl reload httpd.service";
-          };
-        in [ {
-          name = domain;
-          value = cfg;
-          extraDomains = { "www.${domain}" = null; };
-        } ];
+      certs = mapAttrs siteToCertCfg config.staticWeb.sites;
+      siteToCertCfg = domain: {...}: {
+        webroot = config.staticWeb.acmeRoot + "/${domain}";
+        email = "nyarly@gmail.com";
+        postRun = "systemctl reload httpd.service";
+        extraDomainNames = [ "www.${domain}" ];
+      };
     in certs;
 
     systemd.services.httpd = {
