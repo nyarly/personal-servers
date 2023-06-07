@@ -143,16 +143,14 @@ in {
           forceSSL = true;
           enableACME = true;
 
-          locations = {
-            "/".extraConfig = ''
-            RewriteEngine On
-            RewriteCond %{REQUEST_FILENAME} !-d
-            RewriteCond %{REQUEST_FILENAME} !-f
-            RewriteRule ^ /index.php [QSA,L]
-            '';
-          };
-
           extraConfig = ''
+          <Directory ${pkgs.grocy}/public >
+            Options Indexes FollowSymLinks MultiViews
+            AllowOverride All
+            Order allow,deny
+            allow from all
+          </Directory>
+
           ProxyPassMatch ^/(.*\.php(/.*)?)$ "unix:${config.services.phpfpm.pools.grocy.socket}|fcgi://localhost/${pkgs.grocy}/public/"
           ${toString excludedLocations}
           DirectoryIndex /index.php index.php
