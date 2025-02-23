@@ -97,6 +97,7 @@ in
         modules/rails-app.nix
         modules/taskserver-acme.nix
         modules/grocy.nix
+        modules/pg_upgrade.nix
       ];
 
       environment.systemPackages = with pkgs; [ neovim fish ];
@@ -113,7 +114,7 @@ in
       };
 
       security.acme = {
-        email = "nyarly@gmail.com";
+        defaults.email = "nyarly@gmail.com";
         acceptTerms = true;
       };
 
@@ -167,7 +168,7 @@ in
 
         postgresql = {
           enable = true;
-          package = pkgs.postgresql_10;
+          package = pkgs.postgresql_13;
           authentication = ''
             local   all             all                                     trust
             host    all             all             127.0.0.1/32            trust
@@ -268,7 +269,7 @@ in
       };
 
       networking.firewall = {
-        allowedTCPPorts = [ 22 53 80 443 ];
+        allowedTCPPorts = [ 22 53 80 443 53589 ];
         allowedUDPPorts = [ 53 ];
       };
 

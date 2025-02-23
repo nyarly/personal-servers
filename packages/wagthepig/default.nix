@@ -1,4 +1,4 @@
-{ stdenv, bundlerEnv, fetchFromGitHub, ruby, nodejs, masterKey, ... }:
+{ pkgs, stdenv, bundlerEnv, fetchFromGitHub, ruby, nodejs, masterKey, ... }:
 
 let
   package = "wagthepig";
@@ -8,7 +8,7 @@ let
 
   env = bundlerEnv {
     name = "${package}-${version}-railsenv";
-    inherit ruby;
+    ruby = pkgs.ruby_2_7;
     gemdir = ./.;
     groups = ["default" "development"];
   };
