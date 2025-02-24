@@ -1,14 +1,13 @@
-{ options, config, lib, pkgs, ...}:
+{ config, lib, ...}:
 with lib;
 let
   cfg = config.services.taskserverAcme;
-  tscfg = config.services.taskserver;
   user = "taskd";
   group = "taskd";
   dataDir = "/var/lib/taskserver";
 in
   {
-    options = with types;
+  options = with types;
     {
       services.taskserverAcme = {
         enable = mkOption {
@@ -25,22 +24,18 @@ in
       };
     };
 
-    config = (mkIf cfg.enable ( let
-        acmeTargetPath = "${cfg.acmeRoot}/${tscfg.fqdn}";
-        keyFile = op: server: {
-          deployment.keys."taskserver-${server}" = {
-            inherit user group;
-            permissions = "0600"; # the default
-            text = builtins.readFile op;
-          };
+  config = (mkIf cfg.enable ( let
+    keyFile = src: {
+      sops.secrets."taskserver/${src}" = {
+        inherit group;
+        owner = user;
+        mode = "0600"; # the default
+        path = "${dataDir}/keys/taskserver-${src}";
 
-          systemd.services.taskserver-keys = {
-            wants = [ "taskserver-${server}.service" ];
-            after = [ "taskserver-${server}.service" ];
-          };
-
-        };
-      in mkMerge [
+        restartUnits = [ "taskserver" ];
+      };
+    };
+  in mkMerge [
       {
         services.taskserver = {
           inherit user group dataDir;
@@ -48,26 +43,14 @@ in
           pki.auto = {};
           pki.manual = {
             ca.cert     = "${dataDir}/keys/taskserver-ca.pem";
+
             server.cert = "${dataDir}/keys/taskserver-cert.pem";
             server.key  = "${dataDir}/keys/taskserver-key.pem";
           };
         };
-
-        systemd.services.taskserver-keys = {
-          script = ''
-            install -m 0600 -o ${user} -g ${group} /run/keys/taskserver-* ${dataDir}/keys/
-          '';
-        };
-
-        systemd.services.taskserver-init = {
-          wants = [ "taskserver-keys.service" ];
-          after = [ "taskserver-keys.service" ];
-        };
       }
-      (keyFile ../certs/root-cert.pem "ca.pem")
-      (keyFile ../certs/tasks.madhelm.net_cert.pem "cert.pem")
-      (keyFile ../secrets/tasks.madhelm.net_key.pem "key.pem")
-
-
-      ]));
-  }
+      (keyFile "ca.pem")
+      (keyFile "cert.pem")
+      (keyFile "key.pem")
+    ]));
+}

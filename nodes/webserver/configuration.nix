@@ -99,11 +99,20 @@ in
     ../../modules/pg_upgrade.nix
   ];
 
+  sops = {
+    defaultSopsFile = ../../sops-secrets/default.yaml;
+    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+  };
+
   environment.systemPackages = with pkgs; [ neovim fish ];
 
-  deployment.keys = keys;
+  boot.loader.grub.devices = [ "/dev/disk/by-label/nixos" ];
 
   fileSystems = {
+    "/" = {
+      label = "nixos";
+    };
+
     "/var/lib" = {
       device = "/dev/xvdf";
       fsType = "ext4";
