@@ -114,7 +114,7 @@ in
 
   environment.systemPackages = with pkgs; [ neovim fish ];
 
-  boot.loader.grub.devices = [ "/dev/disk/by-label/nixos" ];
+  boot.loader.grub.devices = [ "/dev/xvda" ];
 
   fileSystems = {
     "/" = {
