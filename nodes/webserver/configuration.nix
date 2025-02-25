@@ -89,14 +89,22 @@ let
   */
 in
   {
-  disabledModules = [ "services/web-apps/grocy.nix" ];
+  disabledModules = [
+    "services/web-apps/grocy.nix"
+    ../../modules/grocy.nix
+  ];
   imports = [
     ../../modules/static-site.nix
     ../../modules/app-proxy.nix
     ../../modules/rails-app.nix
     ../../modules/taskserver-acme.nix
-    ../../modules/grocy.nix
     ../../modules/pg_upgrade.nix
+  ];
+
+  # XXX
+  nixpkgs.config.permittedInsecurePackages = [
+    "ruby-2.7.8"
+    "openssl-1.1.1w"
   ];
 
   sops = {
@@ -127,11 +135,11 @@ in
   };
 
   services = {
-    grocy = {
-      enable = true;
-      hostName = "groceries.madhelm.net";
-      # calendar.firstDayOfWeek = 0; # Sunday
-    };
+    #    grocy = {
+    #      enable = true;
+    #      hostName = "groceries.madhelm.net";
+    #      # calendar.firstDayOfWeek = 0; # Sunday
+    #    };
 
     wagthepig = {
       enable = true;

@@ -3,7 +3,7 @@ let
 in
   { pkgs ? pinned }:
 let
-  inherit (pkgs) lib stdenv ruby bundler bundlerEnv fetchFromGitHub;
+  inherit (pkgs) lib stdenv ruby bundler bundlerEnv;
 
   rubyEnv = bundlerEnv {
     inherit ruby;

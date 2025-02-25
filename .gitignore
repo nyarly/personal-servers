@@ -1,3 +1,4 @@
 !.envrc
 secrets/deployments.nixops-shm
 secrets/deployments.nixops-wal
+result

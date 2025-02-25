@@ -1,7 +1,7 @@
 {
   description = "Personal servers deployment and config";
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
 
     flake-utils = {
       url = "github:numtide/flake-utils";
@@ -36,9 +36,9 @@
         deployPkgs = mkDeployPkgs system;
 
       in {
-        devShell = pkgs.mkShell {
+        devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            nixVersions.nix_2_17
+            nixVersions.stable
             # nixops # RIP
             # Good a place as any to sketch out new approach:
             # attributes here for server(s), which we can use nixos-rebuild --target to deploy
@@ -87,7 +87,7 @@
         hostname = import ./. + "/nodes/${name}/hostname.nix";
         profiles.system  = {
           user = "root";
-          path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.${name};
+          path = deploy-rs.lib.activate.nixos self.nixosConfigurations.${name};
         };
       };
 
@@ -99,6 +99,6 @@
 
       deploy.nodes = configs deployConfig nodeList;
 
-      checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) deployPkgs.deploy-rs.lib;
+      checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib;
     });
 }
