@@ -7,47 +7,27 @@ let
   };
 
   buddyNSServers = [
-    "108.61.224.67 NOKEY"
-    "116.203.6.3 NOKEY"
-    "107.191.99.111 NOKEY"
-    "185.22.172.112 NOKEY"
-    "103.6.87.125 NOKEY"
-    "192.184.93.99 NOKEY"
-    "119.252.20.56 NOKEY"
-    "31.220.30.73 NOKEY"
-    "185.34.136.178 NOKEY"
-    "185.136.176.247 NOKEY"
-    "45.77.29.133 NOKEY"
-    "116.203.0.64 NOKEY"
-    "167.88.161.228 NOKEY"
-    "199.195.249.208 NOKEY"
-    "104.244.78.122 NOKEY"
-    "2001:19f0:6400:8642::3 NOKEY"
-    "2a01:4f8:1c0c:8115::3 NOKEY"
-    "2604:180:2:4cf::3 NOKEY"
-    "2a00:1838:20:2::cd5e:68e9 NOKEY"
-    "2403:2500:4000::f3e NOKEY"
     "2604:180:1:92a::3 NOKEY"
-    "2401:1400:1:1201::1:7853:1a5 NOKEY"
-    "2a04:bdc7:100:1b::3 NOKEY"
-    "2a00:dcc7:d3ff:88b2::1 NOKEY"
-    "2a06:fdc0:fade:2f7::1 NOKEY"
-    "2001:19f0:7001:381::3 NOKEY"
-    "2a01:4f8:1c0c:8122::3 NOKEY"
-    "2605:6400:20:d5e::3 NOKEY"
-    "2605:6400:10:65::3 NOKEY"
-    "2605:6400:30:fd6e::3 NOKEY"
+    "2602:fafd:902:51::a NOKEY"
+    "2604:180:2:4cf::3 NOKEY"
+    "2001:19f0:6400:8642::3 NOKEY"
+    "2a01:a500:2766::5c3f:d10b NOKEY"
+    "192.184.93.99 NOKEY"
+    "108.61.224.67 NOKEY"
+    "216.73.156.203 NOKEY"
+    "107.191.99.111 NOKEY"
+    "37.143.61.179 NOKEY"
   ];
 
   keys = import ../../secrets/webserver-keys.nix;
 
+  wagthepig = pkgs.callPackage ../../packages/wagthepig/default.nix {
+    masterKey = keys.wagthepig.text; # XXX ick; another thing to recommend move to "-harder"
+  };
+
   pubIP = "52.40.201.163"; #config.networking.publicIPv4;
 
   blog = pkgs.callPackage ../../packages/blog/default.nix {};
-
-  wagthepig = pkgs.callPackage ../../packages/wagthepig/default.nix {
-    masterKey = keys.wagthepig.text;
-  };
 
   baseDNSZone = ''
         $TTL 18000  ; 5 hours
@@ -92,13 +72,13 @@ in
   disabledModules = [
     "services/web-apps/grocy.nix"
     ../../modules/grocy.nix
+    ../../modules/pg_upgrade.nix # upgraded to 13 already
   ];
   imports = [
     ../../modules/static-site.nix
     ../../modules/app-proxy.nix
     ../../modules/rails-app.nix
     ../../modules/taskserver-acme.nix
-    ../../modules/pg_upgrade.nix
   ];
 
   # XXX
@@ -110,6 +90,10 @@ in
   sops = {
     defaultSopsFile = ../../sops-secrets/default.yaml;
     age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    secrets.wagthepig = {
+      owner = "wagthepig";
+      group = "wheel";
+    };
   };
 
   environment.systemPackages = with pkgs; [ neovim fish ];
@@ -135,11 +119,7 @@ in
   };
 
   services = {
-    #    grocy = {
-    #      enable = true;
-    #      hostName = "groceries.madhelm.net";
-    #      # calendar.firstDayOfWeek = 0; # Sunday
-    #    };
+    openssh.enable = true;
 
     wagthepig = {
       enable = true;
@@ -291,8 +271,8 @@ in
 
   users.users = {
     root.openssh.authorizedKeys.keyFiles = [
-      ssh-keys/root-1.pub
-      ssh-keys/root-2.pub
+      ../../ssh-keys/root-1.pub
+      ../../ssh-keys/root-2.pub
     ];
   };
 }

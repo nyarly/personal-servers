@@ -3,7 +3,7 @@
   inputs = {
     modernNix.url = "github:nixos/nixpkgs/nixos-24.11";
 
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
 
     flake-utils = {
       url = "github:numtide/flake-utils";
@@ -24,8 +24,8 @@
 
       in {
         devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            modern.nixVersions.stable
+          buildInputs = with modern; [
+            nixVersions.stable
             # nixops # RIP
             # Good a place as any to sketch out new approach:
             # attributes here for server(s), which we can use nixos-rebuild --target to deploy
@@ -71,7 +71,7 @@
       deployConfig = name: {
         hostname = import (./. + "/nodes/${name}/hostname.nix");
         sshUser = "root";
-        sshOpts = [ "-i" "~/.ssh/yubi-fd7a96.pub"];
+        sshOpts = [ "-i" ./ssh-keys/root-1.pub ];
         profiles.system  = {
           user = "root";
           path = deploy-rs.lib.${system}.activate.nixos self.nixosConfigurations.${name};
