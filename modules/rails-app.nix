@@ -85,6 +85,28 @@ with lib;
         '';
       };
 
+      smtpUser = mkOption {
+        type = types.str;
+        default = "wagthepig";
+        description = ''
+          path to STMP user to send emails with.
+        '';
+      };
+
+      smtpPassword = mkOption {
+        type = types.str;
+        description = ''
+          path to STMP password to send emails with.
+        '';
+      };
+
+      masterKey = mkOption {
+        type = types.str;
+        description = ''
+          path to Rails master key
+        '';
+      };
+
       database = mkOption {
         type = types.attrs;
         default = {
@@ -199,7 +221,9 @@ with lib;
 
       ${createDBuser config}
 
-      export RAILS_MASTER_KEY=$(cat /run/keys/wagthepig)
+      export RAILS_MASTER_KEY=$(cat ${cfg.masterKey})
+      export SMTP_USERNAME=$(cat ${cfg.smtpUser});
+      export SMTP_PASSWORD=$(cat ${cfg.smtpPassword});
       if ! test -e "${cfg.statePath}/db-setup-done"; then
       ${package.env}/bin/rake db:setup
       touch ${cfg.statePath}/db-setup-done
@@ -210,7 +234,9 @@ with lib;
 
       script = ''
       id
-      export RAILS_MASTER_KEY=$(cat /run/keys/wagthepig)
+      export RAILS_MASTER_KEY=$(cat ${cfg.masterKey})
+      export SMTP_USERNAME=$(cat ${cfg.smtpUser});
+      export SMTP_PASSWORD=$(cat ${cfg.smtpPassword});
       ${package.env}/bin/rails server --binding=${cfg.listenAddress} --port=${toString cfg.listenPort}
       '';
 

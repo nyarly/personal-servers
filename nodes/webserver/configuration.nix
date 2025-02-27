@@ -31,8 +31,8 @@ let
 
   baseDNSZone = ''
         $TTL 18000  ; 5 hours
-        @ IN SOA  ns1.lrdesign.com. nyarly.gmail.com. (
-            2019101501 ; serial
+        @ IN SOA  ns1.madhelm.net. nyarly.gmail.com. (
+            2025022501 ; serial
             10800      ; refresh (3 hours)
             3600       ; retry (1 hour)
             18000      ; expire (5 hours)
@@ -46,29 +46,15 @@ let
 
                        A        ${pubIP}
                        RP     @ nyarly.gmail.com.
+        ns1            CNAME  @
         blog           CNAME  @
         gems           CNAME  @
         repos          CNAME  @
         www            CNAME  @
         tasks          CNAME  @
-        groceries      CNAME  @
   '';
 
-  sesConfig = import ../../secrets/ses-creds.nix;
-
-  /*
-   *    @          IN  TXT    "v=spf1 +a +mx ip4:${pubIP} -all"
-   *    @          IN  TXT    "google-site-verification=PdMCpmcPxMhcuIeabkjGH2AcasilKqCatBs98MxkImk"
-   *    _domainkey IN  TXT    "o=-\;"
-   *    dkim._domainkey IN  TXT ("v=DKIM1\; t=y\; k=rsa\; p="
-   *    ${dnsLines secrets/dkim.cert.bare}
-   *    )
-   *    @          IN  TXT    "v=DMARC1;p=reject;sp=reject;ruf=mailto:nyarly@gmail.com"
-   *    _dmarc     IN  TXT    "v=DMARC1;p=reject;sp=reject;ruf=mailto:nyarly@gmail.com"
-   *    '';
-  */
-in
-  {
+in {
   disabledModules = [
     "services/web-apps/grocy.nix"
     ../../modules/grocy.nix
@@ -93,6 +79,12 @@ in
     secrets.wagthepig = {
       owner = "wagthepig";
       group = "wheel";
+    };
+    secrets.sesUser = {
+      owner = "wagthepig";
+    };
+    secrets.sesPass = {
+      owner = "wagthepig";
     };
   };
 
@@ -143,10 +135,11 @@ in
       extraEnvironment = {
         SMTP_HOST = "email-smtp.us-west-2.amazonaws.com";
         SMTP_PORT = "587";
-        SMTP_USERNAME = sesConfig.user;
-        SMTP_PASSWORD = sesConfig.pass;
       };
 
+      masterKey = config.sops.secrets.wagthepig.path;
+      smtpUser = config.sops.secrets.sesUser.path;
+      smtpPassword = config.sops.secrets.sesPass.path;
     };
 
     fail2ban = {
@@ -194,6 +187,19 @@ in
 
           data = baseDNSZone;
         };
+        "ajprice.art" = {
+          provideXFR = buddyNSServers;
+          notify = buddyNSServers;
+          # rrlWhitelist = ["all"];
+
+          data = baseDNSZone + ''
+              @                                             IN MX      10 mx1.titan.email.
+              @                                             IN MX      20 mx2.titan.email.
+              @                                             IN SPF     "v=spf1 include:spf.titan.email ~all"
+              titan1._domainkey                             IN TXT     "v=DKIM1 k=rsa;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQzAewRcU2wGDaz6e5OlAV3fHGa7FgVZ8OlMcHEh9EzBBYjZbdkcVb6BLfRdF260lI0Wzh6iCr3srlDv0X+i13cGnNyo0msS5dVNkERWpFqGCI3UNHk70E2yWpTn8OyX1DvxQz7/ICbeovFjtt4+DxcjvM9cDLECDJaIeFKVrCSQIDAQAB"
+              @                                             IN TXT     "v=DMARC1;p=none;rua=aj@ajprice.art"
+          '';
+        };
       };
 
     };
@@ -232,7 +238,11 @@ in
               "#nixos" = { Detached = false; };
             };
           };
-          Pass.password = import ../../secrets/znc-pass.nix;
+          Pass.password = {
+            Method = "sha256";
+            Hash = "58a376a413806b105dc3fa11a6ea9db7232794d44f246203a695ecacb5a65a87";
+            Salt = "lt7juLFXT)Q*qTi;51q!";
+          };
         };
       };
     };
