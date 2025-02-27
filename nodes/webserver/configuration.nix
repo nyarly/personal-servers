@@ -29,14 +29,14 @@ let
 
   blog = pkgs.callPackage ../../packages/blog/default.nix {};
 
-  baseDNSZone = ''
-        $TTL 18000  ; 5 hours
+  dnsZone = serial: ttl: ''
+        $TTL ${toString ttl}  ;
         @ IN SOA  ns1.madhelm.net. nyarly.gmail.com. (
-            2025022501 ; serial
-            10800      ; refresh (3 hours)
-            3600       ; retry (1 hour)
-            18000      ; expire (5 hours)
-            18000      ; minimum (5 hours)
+            ${serial} ; serial
+            ${toString (builtins.floor ttl * 0.6)}  ; refresh
+            ${toString (builtins.floor ttl * 0.2)}  ; retry
+            ${toString (ttl)}      ; expire
+            ${toString (ttl)}      ; minimum
         )
                        NS uz5dkwpjfvfwb9rh1qj93mtup0gw65s6j7vqqumch0r9gzlu8qxx39.pro.ns.buddyns.com.
                        NS uz5qfm8n244kn4qz8mh437w9kzvpudduwyldp5361v9n0vh8sx5ucu.pro.ns.buddyns.com.
@@ -53,6 +53,8 @@ let
         www            CNAME  @
         tasks          CNAME  @
   '';
+
+  baseDNSZone = dnsZone "2025022701" 18000;
 
 in {
   disabledModules = [
@@ -192,12 +194,12 @@ in {
           notify = buddyNSServers;
           # rrlWhitelist = ["all"];
 
-          data = baseDNSZone + ''
+          data = (dnsZone "2025022701" 1800) + ''
               @                                             IN MX      10 mx1.titan.email.
               @                                             IN MX      20 mx2.titan.email.
-              @                                             IN SPF     "v=spf1 include:spf.titan.email ~all"
+              @                                             IN TXT     v=spf1 include:spf.titan.email ~all
               titan1._domainkey                             IN TXT     "v=DKIM1 k=rsa;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQzAewRcU2wGDaz6e5OlAV3fHGa7FgVZ8OlMcHEh9EzBBYjZbdkcVb6BLfRdF260lI0Wzh6iCr3srlDv0X+i13cGnNyo0msS5dVNkERWpFqGCI3UNHk70E2yWpTn8OyX1DvxQz7/ICbeovFjtt4+DxcjvM9cDLECDJaIeFKVrCSQIDAQAB"
-              @                                             IN TXT     "v=DMARC1;p=none;rua=aj@ajprice.art"
+              _dmarc                                        IN TXT     "v=DMARC1;p=none;rua=aj@ajprice.art"
           '';
         };
       };
