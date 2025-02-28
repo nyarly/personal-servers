@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, localPkgs, ... }:
 let
   acmeRoot = "/var/lib/acme";
 
@@ -27,14 +27,15 @@ let
 
   pubIP = "52.40.201.163"; #config.networking.publicIPv4;
 
-  blog = pkgs.callPackage ../../packages/blog/default.nix {};
+  # blog = pkgs.callPackage ../../packages/blog/default.nix {};
+  blog = localPkgs.blog;
 
   dnsZone = serial: ttl: ''
         $TTL ${toString ttl}  ;
         @ IN SOA  ns1.madhelm.net. nyarly.gmail.com. (
             ${serial} ; serial
-            ${toString (builtins.floor ttl * 0.6)}  ; refresh
-            ${toString (builtins.floor ttl * 0.2)}  ; retry
+            ${toString (builtins.floor (ttl * 0.6))}  ; refresh
+            ${toString (builtins.floor (ttl * 0.2))}  ; retry
             ${toString (ttl)}      ; expire
             ${toString (ttl)}      ; minimum
         )
@@ -57,11 +58,6 @@ let
   baseDNSZone = dnsZone "2025022701" 18000;
 
 in {
-  disabledModules = [
-    "services/web-apps/grocy.nix"
-    ../../modules/grocy.nix
-    ../../modules/pg_upgrade.nix # upgraded to 13 already
-  ];
   imports = [
     ../../modules/static-site.nix
     ../../modules/app-proxy.nix

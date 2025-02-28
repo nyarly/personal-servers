@@ -10,12 +10,14 @@
     };
     deploy-rs.url = "github:serokell/deploy-rs";
 
+    blog.url = "github:nyarly/blog";
+
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
-  outputs = { self, modernNix, nixpkgs, deploy-rs, flake-utils, sops-nix }@inputs:
+  outputs = { self, modernNix, nixpkgs, deploy-rs, flake-utils, sops-nix, blog }@inputs:
     (flake-utils.lib.eachDefaultSystem (system: let
 
       pkgs = nixpkgs.legacyPackages.${system};
@@ -23,13 +25,15 @@
       modern = modernNix.legacyPackages.${system};
 
       in {
+        packages.blog = blog.packages.${system}.blog;
+
         devShells.default = pkgs.mkShell {
           buildInputs = with modern; [
             nixVersions.stable
-            # nixops # RIP
             # Good a place as any to sketch out new approach:
             # attributes here for server(s), which we can use nixos-rebuild --target to deploy
             # * an association between targets and flake attributes makes sense...
+            # which is how we arrived at deploy-rs
             #
             # For provisioning: Terraform, or https://github.com/tweag/tf-ncl
             # tf-ncl would make the config look a lot like(?) existing config
@@ -64,7 +68,7 @@
         ];
         specialArgs = {
           inherit inputs;
-          localPkgs = self.packages;
+          localPkgs = self.packages.${system};
         };
       };
 
