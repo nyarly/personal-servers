@@ -3,6 +3,7 @@ keys:
   - &human_jdl2 17E0F75E85C4930B83E933556B104C6627056158
   - &box_neumann age1fpaap7hh5jk0w0r5384ttnlfzdwen48ptrjvd9s45qzcs30e6frsp9pt6w
   - &box_webserver age19kr8gzfx42p0t3u6nexem78k3h8wuz0q0spz60pmdujspfn065eqwulf8w
+  - &box_webserver2 age1mg3l894v2ukn009m5rdajjgzy7sx9nz27x6xsdxde6sraprcvq6sqshchv
 creation_rules:
   - path_regex: sops-secrets/.*
     key_groups:
@@ -12,3 +13,4 @@ creation_rules:
         age:
         - *box_neumann
         - *box_webserver
+        - *box_webserver2

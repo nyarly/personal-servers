@@ -1,4 +1,9 @@
-{ config, pkgs, localPkgs, ... }:
+{
+  config,
+  pkgs,
+  localPkgs,
+  ...
+}:
 let
   acmeRoot = "/var/lib/acme";
 
@@ -19,57 +24,51 @@ let
     "37.143.61.179 NOKEY"
   ];
 
-  keys = import ../../secrets/webserver-keys.nix;
-
-  wagthepig = pkgs.callPackage ../../packages/wagthepig/default.nix {
-    masterKey = keys.wagthepig.text; # XXX ick; another thing to recommend move to "-harder"
-  };
-
-  pubIP = "52.40.201.163"; #config.networking.publicIPv4;
+  pubIP = "52.40.201.163"; # config.networking.publicIPv4;
 
   # blog = pkgs.callPackage ../../packages/blog/default.nix {};
   blog = localPkgs.blog;
 
   dnsZone = serial: ttl: ''
-        $TTL ${toString ttl}  ;
-        @ IN SOA  ns1.madhelm.net. nyarly.gmail.com. (
-            ${serial} ; serial
-            ${toString (builtins.floor (ttl * 0.6))}  ; refresh
-            ${toString (builtins.floor (ttl * 0.2))}  ; retry
-            ${toString (ttl)}      ; expire
-            ${toString (ttl)}      ; minimum
-        )
-                       NS uz5dkwpjfvfwb9rh1qj93mtup0gw65s6j7vqqumch0r9gzlu8qxx39.pro.ns.buddyns.com.
-                       NS uz5qfm8n244kn4qz8mh437w9kzvpudduwyldp5361v9n0vh8sx5ucu.pro.ns.buddyns.com.
-                       NS uz588h0rhwuu3cc03gm9uckw0w42cqr459wn1nxrbzhym2wd81zydb.pro.ns.buddyns.com.
-                       NS uz53c7fwlc89h7jrbxcsnxfwjw8k6jtg56l4yvhm6p2xf496c0xl40.pro.ns.buddyns.com.
-                       NS uz56xw8h7fw656bpfv84pctjbl9rbzbqrw4rpzdhtvzyltpjdmx0zq.pro.ns.buddyns.com.
+    $TTL ${toString ttl}  ;
+    @ IN SOA  ns1.madhelm.net. nyarly.gmail.com. (
+      ${serial} ; serial
+      ${toString (builtins.floor (ttl * 0.6))}  ; refresh
+      ${toString (builtins.floor (ttl * 0.2))}  ; retry
+      ${toString (ttl)}      ; expire
+      ${toString (ttl)}      ; minimum
+    )
+                 NS uz5dkwpjfvfwb9rh1qj93mtup0gw65s6j7vqqumch0r9gzlu8qxx39.pro.ns.buddyns.com.
+                 NS uz5qfm8n244kn4qz8mh437w9kzvpudduwyldp5361v9n0vh8sx5ucu.pro.ns.buddyns.com.
+                 NS uz588h0rhwuu3cc03gm9uckw0w42cqr459wn1nxrbzhym2wd81zydb.pro.ns.buddyns.com.
+                 NS uz53c7fwlc89h7jrbxcsnxfwjw8k6jtg56l4yvhm6p2xf496c0xl40.pro.ns.buddyns.com.
+                 NS uz56xw8h7fw656bpfv84pctjbl9rbzbqrw4rpzdhtvzyltpjdmx0zq.pro.ns.buddyns.com.
 
-                       A        ${pubIP}
-                       RP     @ nyarly.gmail.com.
-        ns1            CNAME  @
-        blog           CNAME  @
-        gems           CNAME  @
-        repos          CNAME  @
-        www            CNAME  @
-        tasks          CNAME  @
+                 A        ${pubIP}
+                 RP     @ nyarly.gmail.com.
+    ns1            CNAME  @
+    blog           CNAME  @
+    gems           CNAME  @
+    repos          CNAME  @
+    www            CNAME  @
+    tasks          CNAME  @
   '';
 
   baseDNSZone = dnsZone "2025022701" 18000;
 
-in {
+in
+{
   imports = [
     ../../modules/static-site.nix
     ../../modules/app-proxy.nix
-    ../../modules/rails-app.nix
     ../../modules/taskserver-acme.nix
   ];
 
   # XXX
-  nixpkgs.config.permittedInsecurePackages = [
-    "ruby-2.7.8"
-    "openssl-1.1.1w"
-  ];
+  #  nixpkgs.config.permittedInsecurePackages = [
+  #    "ruby-2.7.8"
+  #    "openssl-1.1.1w"
+  #  ];
 
   sops = {
     defaultSopsFile = ../../sops-secrets/default.yaml;
@@ -78,25 +77,44 @@ in {
       owner = "wagthepig";
       group = "wheel";
     };
-    secrets.sesUser = {
-      owner = "wagthepig";
-    };
     secrets.sesPass = {
       owner = "wagthepig";
     };
   };
 
-  environment.systemPackages = with pkgs; [ neovim fish ];
+  nix = {
+    gc.automatic = true;
+    optimise.automatic = true;
+  };
+
+  environment.systemPackages = with pkgs; [
+    neovim
+    fish
+  ];
 
   boot.loader.grub.devices = [ "/dev/xvda" ];
+
+  swapDevices = [
+    {
+      device = "/var/lib/swapfile";
+      size = 2 * 1024;
+    }
+  ];
 
   fileSystems = {
     "/" = {
       label = "nixos";
     };
 
+    "/nix" = {
+      label = "nix";
+      fsType = "ext4";
+      # autoFormat = true;
+      autoResize = true;
+    };
+
     "/var/lib" = {
-      device = "/dev/xvdf";
+      label = "var-lib";
       fsType = "ext4";
       # autoFormat = true;
       autoResize = true;
@@ -108,48 +126,51 @@ in {
     acceptTerms = true;
   };
 
+  systemd.oomd.enable = false;
+
   services = {
     openssh.enable = true;
 
-    wagthepig = {
+    wag-the-pig = {
       enable = true;
-      package = wagthepig;
 
-      # Should come from a "appserver bridge" module
-      protocol = "http";
-      listenAddress = "localhost";
-      listenPort = ports.wagthepig;
+      # user = wagthepig
+      # group = wagthepig
+      # extraEnvironment = {}
+      # canonDomain = wagthepig.com
+      # listen.address = "127.0.0.1";
+      # # protocol = "http";
+      listen.port = ports.wagthepig;
 
-      database = {
-        adapter = "postgresql";
-        database = "wagthepig";
-        host = "localhost";
-        username = "wagthepig";
-        password = ""; # local trust
-        encoding = "utf8";
-        pool = 5;
+      adminEmail = "nyarly+wagthepig@gmail.com";
+      trustForwarded = true;
+
+      #database = {
+      # user = wagthepig
+      # host = localhost
+      # port = 5432
+      # name = wagthepig
+      # # passwordPath
+      # };
+
+      smtp = {
+        host = "email-smtp.us-west-2.amazonaws.com";
+        port = "587";
+        username = "AKIA2CMZASYUUSGIGHFZ";
+        passwordPath = config.sops.secrets.sesPass.path;
+        # certPath
       };
-
-      extraEnvironment = {
-        SMTP_HOST = "email-smtp.us-west-2.amazonaws.com";
-        SMTP_PORT = "587";
-      };
-
-      masterKey = config.sops.secrets.wagthepig.path;
-      smtpUser = config.sops.secrets.sesUser.path;
-      smtpPassword = config.sops.secrets.sesPass.path;
     };
 
     fail2ban = {
       enable = true;
       jails = {
-        ssh-aggressive =
-          ''
-            filter   = sshd[mode=aggressive]
-            action   = iptables[name=SSH, port=ssh, protocol=tcp]
-            logpath  = /var/log/warn
-            maxretry = 5
-          '';
+        ssh-aggressive = ''
+          filter   = sshd[mode=aggressive]
+          action   = iptables[name=SSH, port=ssh, protocol=tcp]
+          logpath  = /var/log/warn
+          maxretry = 5
+        '';
       };
     };
 
@@ -157,14 +178,14 @@ in {
       enable = true;
       package = pkgs.postgresql_13;
       authentication = ''
-            local   all             all                                     trust
-            host    all             all             127.0.0.1/32            trust
-            host    all             all             ::1/128                 trust
-            # Allow replication connections from localhost, by a user with the
-            # replication privilege.
-            local   replication     all                                     trust
-            host    replication     all             127.0.0.1/32            trust
-            host    replication     all             ::1/128                 trust
+        local   all             all                                     trust
+        host    all             all             127.0.0.1/32            trust
+        host    all             all             ::1/128                 trust
+        # Allow replication connections from localhost, by a user with the
+        # replication privilege.
+        local   replication     all                                     trust
+        host    replication     all             127.0.0.1/32            trust
+        host    replication     all             ::1/128                 trust
       '';
     };
 
@@ -176,7 +197,7 @@ in {
     nsd = {
       enable = true;
 
-      interfaces = []; # wildcard interface (?)
+      interfaces = [ ]; # wildcard interface (?)
       zones = {
         "staticweb" = {
           provideXFR = buddyNSServers;
@@ -190,19 +211,22 @@ in {
           notify = buddyNSServers;
           # rrlWhitelist = ["all"];
 
-          data = (dnsZone "2025022701" 1800) + ''
+          data =
+            (dnsZone "2025030601" 1800)
+            + ''
               @                                             IN MX      10 mx1.titan.email.
               @                                             IN MX      20 mx2.titan.email.
-              @                                             IN TXT     v=spf1 include:spf.titan.email ~all
-              titan1._domainkey                             IN TXT     "v=DKIM1 k=rsa;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQzAewRcU2wGDaz6e5OlAV3fHGa7FgVZ8OlMcHEh9EzBBYjZbdkcVb6BLfRdF260lI0Wzh6iCr3srlDv0X+i13cGnNyo0msS5dVNkERWpFqGCI3UNHk70E2yWpTn8OyX1DvxQz7/ICbeovFjtt4+DxcjvM9cDLECDJaIeFKVrCSQIDAQAB"
-              _dmarc                                        IN TXT     "v=DMARC1;p=none;rua=aj@ajprice.art"
-          '';
+              @                                             IN TXT     "v=spf1 include:spf.titan.email ~all"
+              @                                             IN SPF     "v=spf1 include:spf.titan.email ~all"
+              titan1._domainkey                             IN TXT     "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDQzAewRcU2wGDaz6e5OlAV3fHGa7FgVZ8OlMcHEh9EzBBYjZbdkcVb6BLfRdF260lI0Wzh6iCr3srlDv0X+i13cGnNyo0msS5dVNkERWpFqGCI3UNHk70E2yWpTn8OyX1DvxQz7/ICbeovFjtt4+DxcjvM9cDLECDJaIeFKVrCSQIDAQAB"
+              _dmarc                                        IN TXT     "v=DMARC1; p=none; rua=aj@ajprice.art"
+            '';
         };
       };
 
     };
 
-    taskserver= {
+    taskserver = {
       enable = true;
       fqdn = "tasks.madhelm.net";
       listenHost = "0.0.0.0";
@@ -233,7 +257,9 @@ in {
             #LoadModule = [ "simple_away" ];
             LoadModule = [ "sasl" ];
             Chan = {
-              "#nixos" = { Detached = false; };
+              "#nixos" = {
+                Detached = false;
+              };
             };
           };
           Pass.password = {
@@ -249,8 +275,12 @@ in {
   staticWeb = {
     inherit acmeRoot;
     sites = {
-      "judsonlester.info" = { docRoot = blog; };
-      "madhelm.net"       = { docRoot = blog; };
+      "judsonlester.info" = {
+        docRoot = blog;
+      };
+      "madhelm.net" = {
+        docRoot = blog;
+      };
     };
   };
 
@@ -259,21 +289,27 @@ in {
     sites = {
       "wagthepig.com" = {
         backendPort = ports.wagthepig;
-        staticBase = wagthepig + "/share/wagthepig/public";
-        staticLocations = [ "assets" "system" ];
-        zoneData = baseDNSZone + ''
-              @                                             IN MX      10 inbound-smtp.us-west-2.amazonaws.com.
-              _amazonses                                    IN TXT     OcC8Uz9saTf9WWsl7sFFkx4LKPe33jP7GBBBQ4y1k6E=
-              2j6jkg6lfr5tuqofswar3xi4o7ey3243._domainkey   IN CNAME   2j6jkg6lfr5tuqofswar3xi4o7ey3243.dkim.amazonses.com.
-              ff2re2lzbypx3pt6huxv5itp6gygfdle._domainkey   IN CNAME   ff2re2lzbypx3pt6huxv5itp6gygfdle.dkim.amazonses.com.
-              536itjwezvjiglhoj6balblsrvovp2i2._domainkey   IN CNAME   536itjwezvjiglhoj6balblsrvovp2i2.dkim.amazonses.com.
-        '';
+        zoneData =
+          baseDNSZone
+          + ''
+            @                                             IN MX      10 inbound-smtp.us-west-2.amazonaws.com.
+            _amazonses                                    IN TXT     OcC8Uz9saTf9WWsl7sFFkx4LKPe33jP7GBBBQ4y1k6E=
+            2j6jkg6lfr5tuqofswar3xi4o7ey3243._domainkey   IN CNAME   2j6jkg6lfr5tuqofswar3xi4o7ey3243.dkim.amazonses.com.
+            ff2re2lzbypx3pt6huxv5itp6gygfdle._domainkey   IN CNAME   ff2re2lzbypx3pt6huxv5itp6gygfdle.dkim.amazonses.com.
+            536itjwezvjiglhoj6balblsrvovp2i2._domainkey   IN CNAME   536itjwezvjiglhoj6balblsrvovp2i2.dkim.amazonses.com.
+          '';
       };
     };
   };
 
   networking.firewall = {
-    allowedTCPPorts = [ 22 53 80 443 53589 ];
+    allowedTCPPorts = [
+      22
+      53
+      80
+      443
+      53589
+    ];
     allowedUDPPorts = [ 53 ];
   };
 

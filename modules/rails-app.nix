@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 {
@@ -131,7 +136,7 @@ with lib;
 
       extraEnvironment = mkOption {
         type = types.attrs;
-        default = {};
+        default = { };
         example = {
           FRAB_CURRENCY_UNIT = "€";
           FRAB_CURRENCY_FORMAT = "%n%u";
@@ -152,106 +157,114 @@ with lib;
     };
   };
 
-  config = mkIf config.services.wagthepig.enable
-  (let
-    cfg = config.services.wagthepig;
+  config = mkIf config.services.wagthepig.enable (
+    let
+      cfg = config.services.wagthepig;
 
-    package = cfg.package;
+      package = cfg.package;
 
-    databaseConfig = builtins.toJSON { production = cfg.database; };
+      databaseConfig = builtins.toJSON { production = cfg.database; };
 
-    appEnv = {
-      RAILS_ENV = "production";
-      RACK_ENV = "production";
-      FROM_EMAIL = cfg.fromEmail;
-      RAILS_SERVE_STATIC_FILES = "1";
-      BOOTSNAP_CACHE_DIR = cfg.statePath + "/tmp/cache";
-    } // cfg.extraEnvironment;
+      appEnv = {
+        RAILS_ENV = "production";
+        RACK_ENV = "production";
+        FROM_EMAIL = cfg.fromEmail;
+        RAILS_SERVE_STATIC_FILES = "1";
+        BOOTSNAP_CACHE_DIR = cfg.statePath + "/tmp/cache";
+      } // cfg.extraEnvironment;
 
-    createDBuser = options:
-      let
-        db = options.services.wagthepig.database;
-      in
+      createDBuser =
+        options:
+        let
+          db = options.services.wagthepig.database;
+        in
         if db.adapter == "postgresql" then
           let
             pg = options.services.postgresql;
           in
-            ''
-              while ! ${pg.package}/bin/pg_isready -h ${db.host}; do
-                sleep 0.1
-              done
-              ${pg.package}/bin/createuser -U ${pg.superUser} -h ${db.host} --echo --createdb --no-createrole --no-superuser ${db.username} || echo "already exists (probably)"
-            ''
-        else "echo Don't know how to set up user for database adapter: ${db.adapter}";
+          ''
+            while ! ${pg.package}/bin/pg_isready -h ${db.host}; do
+              sleep 0.1
+            done
+            ${pg.package}/bin/createuser -U ${pg.superUser} -h ${db.host} --echo --createdb --no-createrole --no-superuser ${db.username} || echo "already exists (probably)"
+          ''
+        else
+          "echo Don't know how to set up user for database adapter: ${db.adapter}";
 
-  in
-  {
-    users = {
+    in
+    {
       users = {
-        "${cfg.user}" = {
-          name = cfg.user;
-          group = cfg.group;
-          extraGroups = [ "keys" ];
-          home = "${cfg.statePath}";
-          isSystemUser = true;
+        users = {
+          "${cfg.user}" = {
+            name = cfg.user;
+            group = cfg.group;
+            extraGroups = [ "keys" ];
+            home = "${cfg.statePath}";
+            isSystemUser = true;
+          };
+        };
+
+        groups = {
+          "${cfg.group}" = { };
         };
       };
 
-      groups = { "${cfg.group}" = {}; };
-    };
+      systemd.services.wagthepig = {
+        after = [
+          "network.target"
+          "wagthepig-key.service"
+        ];
+        wants = [ "wagthepig-key.service" ];
+        wantedBy = [ "multi-user.target" ];
+        environment = appEnv;
 
-    systemd.services.wagthepig = {
-      after = [ "network.target" "wagthepig-key.service"];
-      wants = [ "wagthepig-key.service" ];
-      wantedBy = [ "multi-user.target" ];
-      environment = appEnv;
+        path = [ pkgs.nodejs ];
 
-      path = [ pkgs.nodejs ];
+        preStart = ''
+          mkdir -p $BOOTSNAP_CACHE_DIR
+          mkdir -p ${cfg.statePath}/system/attachments
+          mkdir -p ${cfg.statePath}/log
+          chown ${cfg.user}:${cfg.group} -R ${cfg.statePath}
 
-      preStart = ''
-      mkdir -p $BOOTSNAP_CACHE_DIR
-      mkdir -p ${cfg.statePath}/system/attachments
-      mkdir -p ${cfg.statePath}/log
-      chown ${cfg.user}:${cfg.group} -R ${cfg.statePath}
+          mkdir ${package.runDir} -p
+          ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} ${package.runDir}/database.yml
+          ln -sf ${cfg.statePath}/system ${package.runDir}/system
+          ln -sf ${cfg.statePath}/log ${package.runDir}/log
 
-      mkdir ${package.runDir} -p
-      ln -sf ${pkgs.writeText "wagthepig-database.yml" databaseConfig} ${package.runDir}/database.yml
-      ln -sf ${cfg.statePath}/system ${package.runDir}/system
-      ln -sf ${cfg.statePath}/log ${package.runDir}/log
+          ${createDBuser config}
 
-      ${createDBuser config}
+          export RAILS_MASTER_KEY=$(cat ${cfg.masterKey})
+          export SMTP_USERNAME=$(cat ${cfg.smtpUser});
+          export SMTP_PASSWORD=$(cat ${cfg.smtpPassword});
+          if ! test -e "${cfg.statePath}/db-setup-done"; then
+          ${package.env}/bin/rake db:setup
+          touch ${cfg.statePath}/db-setup-done
+          else
+          ${package.env}/bin/rake db:migrate
+          fi
+        '';
 
-      export RAILS_MASTER_KEY=$(cat ${cfg.masterKey})
-      export SMTP_USERNAME=$(cat ${cfg.smtpUser});
-      export SMTP_PASSWORD=$(cat ${cfg.smtpPassword});
-      if ! test -e "${cfg.statePath}/db-setup-done"; then
-      ${package.env}/bin/rake db:setup
-      touch ${cfg.statePath}/db-setup-done
-      else
-      ${package.env}/bin/rake db:migrate
-      fi
-      '';
+        script = ''
+          id
+          export RAILS_MASTER_KEY=$(cat ${cfg.masterKey})
+          export SMTP_USERNAME=$(cat ${cfg.smtpUser});
+          export SMTP_PASSWORD=$(cat ${cfg.smtpPassword});
+          ${package.env}/bin/rails server --binding=${cfg.listenAddress} --port=${toString cfg.listenPort}
+        '';
 
-      script = ''
-      id
-      export RAILS_MASTER_KEY=$(cat ${cfg.masterKey})
-      export SMTP_USERNAME=$(cat ${cfg.smtpUser});
-      export SMTP_PASSWORD=$(cat ${cfg.smtpPassword});
-      ${package.env}/bin/rails server --binding=${cfg.listenAddress} --port=${toString cfg.listenPort}
-      '';
-
-      serviceConfig = {
-        PermissionsStartOnly = true;
-        PrivateTmp = true;
-        PrivateDevices = true;
-        Type = "simple";
-        User = cfg.user;
-        Group = cfg.group;
-        TimeoutSec = "300s";
-        Restart = "on-failure";
-        RestartSec = "10s";
-        WorkingDirectory = "${package}/share/wagthepig";
+        serviceConfig = {
+          PermissionsStartOnly = true;
+          PrivateTmp = true;
+          PrivateDevices = true;
+          Type = "simple";
+          User = cfg.user;
+          Group = cfg.group;
+          TimeoutSec = "300s";
+          Restart = "on-failure";
+          RestartSec = "10s";
+          WorkingDirectory = "${package}/share/wagthepig";
+        };
       };
-    };
-  });
+    }
+  );
 }

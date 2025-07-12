@@ -10,21 +10,43 @@
     };
     deploy-rs.url = "github:serokell/deploy-rs";
 
-    blog.url = "github:nyarly/blog";
+    blog = {
+      url = "github:nyarly/blog";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    wag-the-pig = {
+      # url = "github:nyarly/wagthepig-harder";
+      url = "git+ssh://git@github.com/nyarly/wagthepig-harder?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
-  outputs = { self, modernNix, nixpkgs, deploy-rs, flake-utils, sops-nix, blog }@inputs:
-    (flake-utils.lib.eachDefaultSystem (system: let
+  outputs =
+    {
+      self,
+      modernNix,
+      nixpkgs,
+      deploy-rs,
+      flake-utils,
+      sops-nix,
+      blog,
+      wag-the-pig,
+    }@inputs:
+    (flake-utils.lib.eachDefaultSystem (
+      system:
+      let
 
-      pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = nixpkgs.legacyPackages.${system};
 
-      modern = modernNix.legacyPackages.${system};
+        modern = modernNix.legacyPackages.${system};
 
-      in {
+      in
+      {
         packages.blog = blog.packages.${system}.blog;
 
         devShells.default = pkgs.mkShell {
@@ -52,44 +74,64 @@
             sops-nix.packages.${system}.sops-import-keys-hook
           ];
         };
-      })) // (let
-      system = flake-utils.lib.system.x86_64-linux;
+      }
+    ))
+    // (
+      let
+        system = flake-utils.lib.system.x86_64-linux;
 
-      nodeList = with builtins; let
-        nodeDir = readDir ./nodes;
-        isDir = dirList: name: (getAttr name dirList) == "directory";
-      in filter (isDir nodeDir) (attrNames nodeDir);
+        nodeList =
+          with builtins;
+          let
+            nodeDir = readDir ./nodes;
+            isDir = dirList: name: (getAttr name dirList) == "directory";
+          in
+          filter (isDir nodeDir) (attrNames nodeDir);
 
-      systemConfig = name: nixpkgs.lib.nixosSystem {
-        inherit system;
-        modules = [
-          sops-nix.nixosModules.sops
-          (./. + "/nodes/${name}/configuration.nix")
-        ];
-        specialArgs = {
-          inherit inputs;
-          localPkgs = self.packages.${system};
+        systemConfig =
+          name:
+          nixpkgs.lib.nixosSystem {
+            inherit system;
+            modules = [
+              sops-nix.nixosModules.sops
+              wag-the-pig.nixosModules.wag-the-pig
+              (./. + "/nodes/${name}/configuration.nix")
+            ];
+            specialArgs = {
+              inherit inputs;
+              localPkgs = self.packages.${system};
+            };
+          };
+
+        deployConfig = name: {
+          hostname = import (./. + "/nodes/${name}/hostname.nix");
+          sshUser = "root";
+          sshOpts = [
+            "-i"
+            ./ssh-keys/root-1.pub
+          ];
+          profiles.system = {
+            user = "root";
+            path = deploy-rs.lib.${system}.activate.nixos self.nixosConfigurations.${name};
+          };
         };
-      };
 
-      deployConfig = name: {
-        hostname = import (./. + "/nodes/${name}/hostname.nix");
-        sshUser = "root";
-        sshOpts = [ "-i" ./ssh-keys/root-1.pub ];
-        profiles.system  = {
-          user = "root";
-          path = deploy-rs.lib.${system}.activate.nixos self.nixosConfigurations.${name};
-        };
-      };
+        configs =
+          aConfig: names:
+          builtins.listToAttrs (
+            map (n: {
+              name = n;
+              value = (aConfig n);
+            }) names
+          );
+      in
+      {
 
-      configs = aConfig: names:
-        builtins.listToAttrs (map (n: { name = n; value = (aConfig n); }) names);
-    in {
+        nixosConfigurations = configs systemConfig nodeList;
 
-      nixosConfigurations = configs systemConfig nodeList;
+        deploy.nodes = configs deployConfig nodeList;
 
-      deploy.nodes = configs deployConfig nodeList;
-
-      checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib;
-    });
+        checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib;
+      }
+    );
 }
