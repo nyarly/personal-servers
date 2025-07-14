@@ -1,9 +1,9 @@
 {
   description = "Personal servers deployment and config";
   inputs = {
-    modernNix.url = "github:nixos/nixpkgs/nixos-24.11";
+    modernNix.url = "github:nixos/nixpkgs/nixos-25.05";
 
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
 
     flake-utils = {
       url = "github:numtide/flake-utils";

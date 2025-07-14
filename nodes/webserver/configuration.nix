@@ -92,7 +92,7 @@ in
     fish
   ];
 
-  boot.loader.grub.devices = [ "/dev/xvda" ];
+  boot.loader.grub.devices = [ "/dev/nvme0n1" ];
 
   swapDevices = [
     {
