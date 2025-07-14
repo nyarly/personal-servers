@@ -21,7 +21,7 @@
     };
 
     wagthepig = {
-      url = "git+ssh://git@github.com/nyarly/wagthepig-harder?ref=main";
+      url = "github:nyarly/wagthepig-harder";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

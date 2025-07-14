@@ -398,18 +398,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1752463105,
-        "narHash": "sha256-27ZUzO0ebBMgvSti9ZuV+Rj0og3uR7N63e8hbf42I3g=",
-        "ref": "main",
-        "rev": "e397b5fb7997a89106c17117966a99879b99c30c",
-        "revCount": 89,
-        "type": "git",
-        "url": "ssh://git@github.com/nyarly/wagthepig-harder"
+        "lastModified": 1752468768,
+        "narHash": "sha256-S/O64tSU6V5q4GgzfM6m7IPx6j5TYofT3kOdMHLyxQA=",
+        "owner": "nyarly",
+        "repo": "wagthepig-harder",
+        "rev": "39978afa46ddb40f60fd65e19590d2b9acaa703f",
+        "type": "github"
       },
       "original": {
-        "ref": "main",
-        "type": "git",
-        "url": "ssh://git@github.com/nyarly/wagthepig-harder"
+        "owner": "nyarly",
+        "repo": "wagthepig-harder",
+        "type": "github"
       }
     }
   },
