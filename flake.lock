@@ -8,11 +8,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1740701873,
-        "narHash": "sha256-XPUBHdtCh4wrJzW6HZ9oYVp3EADAhYUxoV9PlyX7CQo=",
+        "lastModified": 1752452977,
+        "narHash": "sha256-tHt3IUu7mjdbWMLtxpM9V392mr5WB+Ga2Hpy5gBtwgI=",
         "owner": "nyarly",
         "repo": "blog",
-        "rev": "05a79375df4abbf5487dc004c1357128986e96c0",
+        "rev": "edac5503ba4d12f2922ff07e60a36867a61fe1b9",
         "type": "github"
       },
       "original": {
@@ -44,7 +44,7 @@
     "elm-spa": {
       "inputs": {
         "nixpkgs": [
-          "wag-the-pig",
+          "wagthepig",
           "mkElmDerivation",
           "nixpkgs"
         ]
@@ -66,7 +66,7 @@
     "elm-watch": {
       "inputs": {
         "nixpkgs": [
-          "wag-the-pig",
+          "wagthepig",
           "mkElmDerivation",
           "nixpkgs"
         ],
@@ -211,16 +211,16 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1720535198,
-        "narHash": "sha256-zwVvxrdIzralnSbcpghA92tWu2DV2lwv89xZc8MTrbg=",
+        "lastModified": 1751274312,
+        "narHash": "sha256-/bVBlRpECLVzjV19t5KMdMFWSwKLtb5RyXdjz3LJT+g=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "205fd4226592cc83fd4c0885a3e4c9c400efabb5",
+        "rev": "50ab793786d9de88ee30ec4e4c24fb4236fc2674",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
-        "ref": "nixos-23.11",
+        "ref": "nixos-24.11",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -244,7 +244,7 @@
     "npm-fix": {
       "inputs": {
         "nixpkgs": [
-          "wag-the-pig",
+          "wagthepig",
           "mkElmDerivation",
           "elm-watch",
           "nixpkgs"
@@ -288,7 +288,7 @@
         "modernNix": "modernNix",
         "nixpkgs": "nixpkgs_2",
         "sops-nix": "sops-nix",
-        "wag-the-pig": "wag-the-pig"
+        "wagthepig": "wagthepig"
       }
     },
     "sops-nix": {
@@ -389,7 +389,7 @@
         "type": "github"
       }
     },
-    "wag-the-pig": {
+    "wagthepig": {
       "inputs": {
         "flake-utils": "flake-utils_3",
         "mkElmDerivation": "mkElmDerivation",
@@ -398,11 +398,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1752282370,
-        "narHash": "sha256-/7EhlfbTNWxu/jqpiWvs3PmMHXR2+yb6ZzUoVqLjNpU=",
+        "lastModified": 1752396187,
+        "narHash": "sha256-nL+PxRFA7qZA+cn7y8hnwTYySxfbbccMPlVWmc9SZto=",
         "ref": "main",
-        "rev": "0051935617c5afe2dbaba5895a119b1d7e1cca06",
-        "revCount": 86,
+        "rev": "2d36c9ed5ffd49bbd7d4fea842ff3fcc8f54071f",
+        "revCount": 87,
         "type": "git",
         "url": "ssh://git@github.com/nyarly/wagthepig-harder"
       },

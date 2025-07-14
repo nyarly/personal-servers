@@ -30,11 +30,13 @@ with lib;
 
               staticBase = mkOption {
                 type = nullOr path;
+                default = null;
               };
 
               # TODO: assert length == 0 if staticBase null
               staticLocations = mkOption {
                 type = listOf str;
+                default = [ ];
               };
 
               acmeEnabled = mkOption {
@@ -64,10 +66,16 @@ with lib;
   };
 
   config = mkIf (builtins.length (builtins.attrNames config.appProxy.sites) > 0) {
+    assertions =
+      let
+        staticsAssertion = siteName: siteCfg: {
+          assertion = siteCfg.staticBase == null -> (length siteCfg.staticLocations) == 0;
+          message = "in ${siteName}, staticBase is null, but staticLocations provided - nowhere to host them!";
+        };
+      in
+      lib.mapAttrsToList staticsAssertion config.appProxy.sites;
     services.httpd.virtualHosts =
       let
-        vhosts =
-          (mapAttrs' httpVHost config.appProxy.sites) // (mapAttrs' httpsVHost config.appProxy.sites);
         httpVHost =
           name: hcfg:
           nameValuePair "${name}-http" {
@@ -109,6 +117,8 @@ with lib;
               '';
             }
           );
+        vhosts =
+          (mapAttrs' httpVHost config.appProxy.sites) // (mapAttrs' httpsVHost config.appProxy.sites);
       in
       vhosts;
 

@@ -155,7 +155,7 @@ in
 
       smtp = {
         host = "email-smtp.us-west-2.amazonaws.com";
-        port = "587";
+        port = 587;
         username = "AKIA2CMZASYUUSGIGHFZ";
         passwordPath = config.sops.secrets.sesPass.path;
         # certPath

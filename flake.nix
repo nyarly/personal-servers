@@ -3,7 +3,7 @@
   inputs = {
     modernNix.url = "github:nixos/nixpkgs/nixos-24.11";
 
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
 
     flake-utils = {
       url = "github:numtide/flake-utils";
@@ -20,8 +20,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    wag-the-pig = {
-      # url = "github:nyarly/wagthepig-harder";
+    wagthepig = {
       url = "git+ssh://git@github.com/nyarly/wagthepig-harder?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -35,7 +34,7 @@
       flake-utils,
       sops-nix,
       blog,
-      wag-the-pig,
+      wagthepig,
     }@inputs:
     (flake-utils.lib.eachDefaultSystem (
       system:
@@ -94,7 +93,7 @@
             inherit system;
             modules = [
               sops-nix.nixosModules.sops
-              wag-the-pig.nixosModules.wag-the-pig
+              wagthepig.nixosModules.${system}.wag-the-pig
               (./. + "/nodes/${name}/configuration.nix")
             ];
             specialArgs = {
