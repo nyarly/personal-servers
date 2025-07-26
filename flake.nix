@@ -67,6 +67,8 @@
             ssh-to-pgp
             ssh-to-age
             age
+            pulumi
+            awscli2
           ];
 
           nativeBuildInputs = [
