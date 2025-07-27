@@ -59,6 +59,7 @@
             # For provisioning: Terraform, or https://github.com/tweag/tf-ncl
             # tf-ncl would make the config look a lot like(?) existing config
             # ... then we'd need to import state etc.
+            # XXX tf-ncl doesn't currrently build; 2yr bitrot
             git-crypt
             nix-prefetch-git
             deploy-rs.packages.${system}.deploy-rs
@@ -67,8 +68,9 @@
             ssh-to-pgp
             ssh-to-age
             age
-            pulumi
-            awscli2
+            awscli2 # future work
+            opentofu # future work
+            cachix
           ];
 
           nativeBuildInputs = [
