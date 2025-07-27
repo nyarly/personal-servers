@@ -415,11 +415,11 @@
         "nixpkgs-unstable": "nixpkgs-unstable"
       },
       "locked": {
-        "lastModified": 1753507607,
-        "narHash": "sha256-ckEHIvuI1AP4m8pjYqP2WE44hhqetUjhkhUJB+q8HgY=",
+        "lastModified": 1753650712,
+        "narHash": "sha256-Jq8Y/g2sdRdpAeX4CqEYX+xHv84LdADiF3yDB/UafqM=",
         "owner": "nyarly",
         "repo": "wagthepig-harder",
-        "rev": "ceee97cee20e7326e2e394fb7b9d6fe4a4d8896c",
+        "rev": "0e6fa65d14bdf994168859a847caa1299b917f4e",
         "type": "github"
       },
       "original": {
